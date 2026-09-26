@@ -1,0 +1,35 @@
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Electron build output
+dist/
+out/
+release/
+build/
+
+# App user data (persisted locally, not for source control)
+.myfiles/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+
+# Test coverage
+coverage/
+
+# Temp / scratch
+*.tmp
+*.bak

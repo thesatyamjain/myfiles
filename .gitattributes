@@ -1,0 +1,25 @@
+# Normalize line endings to LF on commit (cross-platform safe)
+* text=auto eol=lf
+
+# Binary — never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.rar binary
+*.tar binary
+*.gz binary
+*.bz2 binary
+*.xz binary
+*.iso binary
+*.cab binary
+*.exe binary
+*.dll binary
+*.node binary
+
+# PDF.js vendor — treat as binary so diffs stay clean
+src/vendor/**/*.js binary

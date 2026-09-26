@@ -1,0 +1,24 @@
+{
+  "name": "myfiles",
+  "version": "1.1.0",
+  "description": "MyFiles - Fast, keyboard-first Windows File Manager with Quick Look, Miller Columns, and Colored Tags",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "test": "node test/self-check.js"
+  },
+  "keywords": [
+    "file-manager",
+    "windows-explorer",
+    "finder",
+    "quick-look",
+    "miller-columns",
+    "tags"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^41.2.0"
+  }
+}

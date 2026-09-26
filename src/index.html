@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: http://localhost:5241; connect-src 'self' http://localhost:5241; font-src 'self' data:;">
+  <title>MyFiles</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230284c7'/%3E%3Cpath d='M6 10c0-1.4 1-2.5 2.5-2.5h4.2l2.4 2.1h8.4c1.5 0 2.5 1.1 2.5 2.5v9.4c0 1.4-1 2.5-2.5 2.5H8.5C7 26.5 6 25.4 6 24V10z' fill='%2338bdf8'/%3E%3Crect x='8' y='8' width='12' height='12' rx='1.5' fill='%23ffffff' fill-opacity='0.9'/%3E%3Cpath d='M5 14c0-1.2 1-2.2 2.2-2.2h17.6c1.2 0 2.2 1 2.2 2.2v8.5c0 1.5-1.2 2.7-2.7 2.7H7.7C6.2 25.2 5 24 5 22.5V14z' fill='%232563eb'/%3E%3C/svg%3E">
+</head>
+<body class="theme-system">
+  <div id="app" class="app-container">
+    <!-- Sleek Custom Titlebar -->
+    <header class="titlebar" id="titlebar">
+      <div class="titlebar-left">
+        <div class="app-badge" title="MyFiles File Manager">
+          <svg class="icon app-icon" viewBox="0 0 32 32" fill="none">
+            <defs>
+              <!-- Primary Background Squircle Gradient -->
+              <linearGradient id="finderAppGrad" x1="16" y1="2" x2="16" y2="30" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="50%" stop-color="#0369a1"/>
+                <stop offset="100%" stop-color="#0c4a6e"/>
+              </linearGradient>
+
+              <!-- Folder Back Plate Gradient -->
+              <linearGradient id="folderBackGrad" x1="16" y1="7" x2="16" y2="24" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+
+              <!-- Folder Front Flap Radiant Gradient -->
+              <linearGradient id="folderFrontGrad" x1="16" y1="13" x2="16" y2="26" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#60a5fa"/>
+                <stop offset="60%" stop-color="#2563eb"/>
+                <stop offset="100%" stop-color="#1d4ed8"/>
+              </linearGradient>
+
+              <!-- Paper Sheet Gradient -->
+              <linearGradient id="sheetGrad" x1="15" y1="8" x2="15" y2="22" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="#e2e8f0"/>
+              </linearGradient>
+
+              <!-- Soft Depth Drop Shadow Filter -->
+              <filter id="iconDepthShadow" x="-15%" y="-15%" width="130%" height="135%">
+                <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.32"/>
+              </filter>
+            </defs>
+
+            <!-- Base Squircle Tile with Specular Border -->
+            <rect x="2" y="2" width="28" height="28" rx="6.5" fill="url(#finderAppGrad)"/>
+            <rect x="2.5" y="2.5" width="27" height="27" rx="6" stroke="rgba(255, 255, 255, 0.15)" stroke-width="0.8" fill="none"/>
+
+            <!-- Folder Back Plate with Curved Tab -->
+            <path d="M5.5 10c0-1.4 1-2.5 2.5-2.5h4.2c1 0 1.8.6 2.4 1.5l.8 1.2c.4.6 1 .9 1.8.9h6.3c1.5 0 2.5 1.1 2.5 2.5v9.4c0 1.4-1 2.5-2.5 2.5H8c-1.5 0-2.5-1.1-2.5-2.5V10z" fill="url(#folderBackGrad)"/>
+
+            <!-- Translucent Secondary Glass Card (Underneath) -->
+            <rect x="8.5" y="8" width="13" height="12" rx="1.5" fill="#93c5fd" fill-opacity="0.5"/>
+
+            <!-- Primary Document Sheet with Folded Dog-Ear Corner -->
+            <g filter="url(#iconDepthShadow)">
+              <path d="M7.5 9.5c0-.8.7-1.5 1.5-1.5h7.2l4.8 4.8v8.7c0 .8-.7 1.5-1.5 1.5H9c-.8 0-1.5-.7-1.5-1.5V9.5z" fill="url(#sheetGrad)"/>
+              <!-- Folded Flap -->
+              <path d="M16.2 8v3.6c0 .7.5 1.2 1.2 1.2h3.6z" fill="#cbd5e1"/>
+              <!-- Document Content Lines -->
+              <line x1="9.8" y1="12.5" x2="14.5" y2="12.5" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+              <line x1="9.8" y1="15.2" x2="18.2" y2="15.2" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+              <line x1="9.8" y1="17.9" x2="16" y2="17.9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+            </g>
+
+            <!-- Glossy Front Folder Flap with Depth Shadow -->
+            <path d="M5 14c0-1.2 1-2.2 2.2-2.2h17.6c1.2 0 2.2 1 2.2 2.2v8.5c0 1.5-1.2 2.7-2.7 2.7H7.7C6.2 25.2 5 24 5 22.5V14z" fill="url(#folderFrontGrad)" filter="url(#iconDepthShadow)"/>
+
+            <!-- Front Flap Specular Highlight Top Edge -->
+            <path d="M7.5 12.6h17" stroke="rgba(255, 255, 255, 0.7)" stroke-width="0.8" stroke-linecap="round"/>
+
+            <!-- Minimalist Monogram / Badge Glyph on Flap -->
+            <g opacity="0.95">
+              <rect x="12" y="15.5" width="8" height="6.5" rx="1.2" stroke="#ffffff" stroke-width="1.2" fill="none"/>
+              <line x1="14" y1="17.8" x2="18" y2="17.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+              <line x1="14" y1="19.8" x2="16.5" y2="19.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+            </g>
+
+            <!-- Squircle Top Specular Arc -->
+            <path d="M3.5 8c0-3.2 2.2-4.8 5.5-4.8h14c3.3 0 5.5 1.6 5.5 4.8" stroke="rgba(255, 255, 255, 0.35)" stroke-width="0.9" stroke-linecap="round" fill="none"/>
+          </svg>
+          <span class="app-title">MyFiles</span>
+        </div>
+
+        <!-- Tab Strip -->
+        <div class="tabs-container" id="tabsContainer">
+          <!-- Rendered dynamically -->
+        </div>
+        <button class="btn-tab-new" id="btnNewTab" title="New Tab (Ctrl+T)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <div class="titlebar-right">
+        <button class="win-btn" id="btnTitlebarSettings" title="Settings & Preferences (Ctrl+,)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="win-btn win-btn-minimize" id="btnWinMinimize" title="Minimize">
+          <svg viewBox="0 0 10 10"><line x1="0.5" y1="5" x2="9.5" y2="5" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button class="win-btn win-btn-maximize" id="btnWinMaximize" title="Maximize">
+          <svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button class="win-btn win-btn-close" id="btnWinClose" title="Close">
+          <svg viewBox="0 0 10 10"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Ribbon Action Toolbar -->
+    <nav class="toolbar" id="toolbar">
+      <!-- Nav controls (macOS Finder Reference: Capsule < | >) -->
+      <div class="toolbar-group nav-group">
+        <button class="tool-btn icon-only" id="btnToggleSidebar" title="Toggle Sidebar (Ctrl+B)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <div class="nav-capsule" id="navCapsule">
+          <button class="nav-capsule-btn" id="btnBack" title="Back (Alt+Left)" disabled>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="nav-capsule-divider"></div>
+          <button class="nav-capsule-btn" id="btnForward" title="Forward (Alt+Right)" disabled>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <button class="tool-btn icon-only" id="btnUp" title="Up to Parent (Alt+Up)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="tool-btn icon-only" id="btnRefresh" title="Refresh (F5)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+
+      <!-- Address / Breadcrumb Bar -->
+      <div class="address-bar-wrapper">
+        <div class="address-bar" id="addressBar">
+          <div class="breadcrumbs-trail" id="breadcrumbsTrail">
+            <!-- Dynamic segments -->
+          </div>
+          <input type="text" class="path-input" id="pathInput" spellcheck="false" style="display: none;" />
+          <button class="btn-copy-path" id="btnCopyPath" title="Copy Path">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Utilities -->
+      <div class="toolbar-group action-group">
+        <!-- New File Dropdown -->
+        <div class="dropdown-wrapper">
+          <button class="tool-btn btn-primary" id="btnNewFileMenu" title="Create New Document">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <span class="btn-text-responsive">New</span>
+            <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="dropdown-menu" id="newFileDropdown">
+            <div class="dropdown-item" data-template="txt">
+              <span class="ext-badge txt">TXT</span> Plain Text (.txt)
+            </div>
+            <div class="dropdown-item" data-template="md">
+              <span class="ext-badge md">MD</span> Markdown (.md)
+            </div>
+            <div class="dropdown-item" data-template="json">
+              <span class="ext-badge json">JSON</span> JSON Document (.json)
+            </div>
+            <div class="dropdown-item" data-template="py">
+              <span class="ext-badge code">PY</span> Python Script (.py)
+            </div>
+            <div class="dropdown-item" data-template="js">
+              <span class="ext-badge code">JS</span> JavaScript (.js)
+            </div>
+            <div class="dropdown-item" data-template="csv">
+              <span class="ext-badge csv">CSV</span> Spreadsheet CSV (.csv)
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" data-template="custom">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              Custom File Name...
+            </div>
+          </div>
+        </div>
+
+        <button class="tool-btn" id="btnNewFolder" title="New Folder (Ctrl+Shift+N)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+          <span class="btn-text-responsive">New Folder</span>
+        </button>
+
+        <div class="toolbar-separator hide-lg"></div>
+
+        <button class="tool-btn icon-only hide-lg" id="btnCut" title="Cut (Ctrl+X)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        </button>
+        <button class="tool-btn icon-only hide-lg" id="btnCopy" title="Copy (Ctrl+C)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button class="tool-btn icon-only hide-lg" id="btnPaste" title="Paste (Ctrl+V)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        </button>
+        <button class="tool-btn icon-only hide-lg" id="btnRename" title="Rename (F2)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+        <button class="tool-btn icon-only hide-lg" id="btnDelete" title="Move to Trash (Del)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+
+        <div class="toolbar-separator hide-md"></div>
+
+        <button class="tool-btn hide-sm" id="btnQuickLook" title="Quick Look Preview (Space)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="btn-text-responsive">Preview</span>
+        </button>
+
+        <button class="tool-btn icon-only hide-md" id="btnTerminal" title="Open Terminal here">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </button>
+
+        <button class="tool-btn icon-only hide-md" id="btnToggleHidden" title="Toggle Hidden & System Files (Ctrl+H)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22" id="hiddenSlash" stroke="currentColor" stroke-width="2" style="display: none;"/></svg>
+        </button>
+
+        <button class="tool-btn icon-only hide-md" id="btnToggleCheckboxes" title="Toggle item check boxes">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </button>
+
+        <button class="tool-btn icon-only hide-md" id="btnUndo" title="Undo File Operation (Ctrl+Z)" disabled>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        </button>
+        <button class="tool-btn icon-only hide-md" id="btnRedo" title="Redo File Operation (Ctrl+Y)" disabled>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+        </button>
+      </div>
+
+      <!-- View Switcher (Finder order: Grid, List, Columns, Gallery) -->
+      <div class="toolbar-group view-switcher">
+        <button class="view-btn" id="btnViewGrid" data-view="grid" title="Grid / Icons View (Ctrl+1)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <button class="view-btn" id="btnViewList" data-view="list" title="Details List View (Ctrl+2)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
+        </button>
+        <button class="view-btn active" id="btnViewColumns" data-view="columns" title="Finder Column View / Miller Columns (Ctrl+3)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="18" rx="1"/><rect x="17" y="3" width="5" height="18" rx="1"/></svg>
+        </button>
+        <button class="view-btn" id="btnViewGallery" data-view="gallery" title="Gallery View / Hero + Scrubber Bar (Ctrl+4)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="12" rx="2"/><line x1="3" y1="19" x2="7" y2="19"/><line x1="10" y1="19" x2="14" y2="19"/><line x1="17" y1="19" x2="21" y2="19"/></svg>
+        </button>
+      </div>
+
+      <!-- Group & Sort Dropdown (macOS Reference) -->
+      <div class="dropdown-wrapper">
+        <button class="tool-btn icon-only" id="btnSortMenu" title="Group and Sort Items">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+        </button>
+        <div class="dropdown-menu" id="sortDropdown">
+          <div class="dropdown-item active" data-sort="name">Name</div>
+          <div class="dropdown-item" data-sort="mtime">Date Modified</div>
+          <div class="dropdown-item" data-sort="size">Size</div>
+          <div class="dropdown-item" data-sort="kind">Kind</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" data-sort-dir="asc">Ascending</div>
+          <div class="dropdown-item" data-sort-dir="desc">Descending</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" id="sortOptShowViewOptions">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9h7"/><path d="M14 15h7"/></svg>
+            <span>Show View Options</span>
+            <span class="kbd-hint" style="margin-left: auto;">Ctrl+J</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toggle Dual Pane View (Split Workspace) -->
+      <button class="tool-btn icon-only" id="btnToggleDualPane" title="Toggle Dual Split-Pane View (Ctrl+Shift+D)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      </button>
+
+      <!-- Toggle Right Preview Pane / Inspector (macOS Reference) -->
+      <button class="tool-btn icon-only" id="btnTogglePreviewPane" title="Toggle Preview Pane (Ctrl+Shift+P)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="18" y1="8" x2="20" y2="8"/><line x1="18" y1="12" x2="20" y2="12"/><line x1="18" y1="16" x2="20" y2="16"/></svg>
+      </button>
+
+      <!-- Action Capsule (macOS Reference 1 & 5: Share | Tag | Get Info | Go | More) -->
+      <div class="action-capsule" id="actionCapsule">
+        <button class="action-capsule-btn" id="btnShareItem" title="Share (Ctrl+Alt+S)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+        <div class="action-capsule-divider hide-sm"></div>
+        <button class="action-capsule-btn hide-sm" id="btnToolbarTag" title="Tag Item">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>
+        </button>
+        <div class="action-capsule-divider hide-sm"></div>
+        <div class="dropdown-wrapper">
+          <button class="action-capsule-btn" id="btnToolbarMore" title="More Actions">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
+          </button>
+          <div class="dropdown-menu" id="moreActionsDropdown">
+            <div class="dropdown-item" id="moreActGetInfo">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Get Info</span> <span class="kbd-hint">Ctrl+I</span>
+            </div>
+            <div class="dropdown-item" id="moreActGoToFolder">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/><circle cx="12" cy="12" r="10"/></svg>
+              <span>Go to Folder...</span> <span class="kbd-hint">Ctrl+Shift+G</span>
+            </div>
+            <div class="dropdown-item" id="moreActNewFolderWithSelection">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+              <span>New Folder with Selection</span> <span class="kbd-hint">Ctrl+Alt+N</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" id="moreActFindDuplicates">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"/><rect x="8" y="3" width="13" height="13" rx="2"/><path d="M12 8h5M12 11h3"/></svg>
+              <span>Find Duplicates...</span> <span class="kbd-hint">Ctrl+Shift+U</span>
+            </div>
+            <div class="dropdown-item" id="moreActManageStorage">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>
+              <span>Manage Storage...</span> <span class="kbd-hint">Ctrl+Shift+M</span>
+            </div>
+            <div class="dropdown-item" id="moreActBatchRename">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Batch Rename...</span> <span class="kbd-hint">F2</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" id="moreActShare">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              <span>Share...</span> <span class="kbd-hint">Ctrl+Alt+S</span>
+            </div>
+            <div class="dropdown-item" id="moreActReveal">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              <span>Show in Explorer</span>
+            </div>
+            <div class="dropdown-item" id="moreActViewOptions">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9h7"/><path d="M14 15h7"/></svg>
+              <span>Show View Options</span> <span class="kbd-hint">Ctrl+J</span>
+            </div>
+            <div class="dropdown-item" id="moreActPreferences">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Preferences...</span> <span class="kbd-hint">Ctrl+,</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instant Search & Quick Filter (Reference Image 3 & 5) -->
+      <div class="search-wrapper">
+        <div class="search-box">
+          <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search... (Ctrl+F)" autocomplete="off" spellcheck="false" />
+          <button class="btn-search-clear" id="btnSearchClear" style="display: none;" title="Clear search (Esc)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          
+          <!-- Search Attribute Dropdown (macOS Finder Reference 3) -->
+          <div class="search-type-wrapper">
+            <button class="btn-search-type" id="btnSearchTypeToggle" title="Search Attributes & Filters" type="button">
+              <span id="searchTypeLabel">Name</span>
+              <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="search-attr-dropdown" id="searchAttrDropdown" style="display: none;">
+              <div class="search-attr-item active" data-attr="name">
+                <span class="attr-check">✓</span>
+                <span class="attr-label">Name</span>
+              </div>
+              <div class="search-attr-item" data-attr="content">
+                <span class="attr-check"></span>
+                <span class="attr-label">Contents</span>
+              </div>
+              <div class="search-attr-divider"></div>
+              <div class="search-attr-item" data-attr="mtime">
+                <span class="attr-check"></span>
+                <span class="attr-label">Last modified date</span>
+              </div>
+              <div class="search-attr-item" data-attr="ctime">
+                <span class="attr-check"></span>
+                <span class="attr-label">Created date</span>
+              </div>
+              <div class="search-attr-divider"></div>
+              <div class="search-attr-item" data-attr="tags">
+                <span class="attr-check"></span>
+                <span class="attr-label">Tags</span>
+              </div>
+              <div class="search-attr-item" data-attr="visibility">
+                <span class="attr-check"></span>
+                <span class="attr-label">File visibility</span>
+              </div>
+              <div class="search-attr-item" data-attr="kind">
+                <span class="attr-check"></span>
+                <span class="attr-label">Kind</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Spotlight / Finder Search Dropdown Popover (Reference Image 5) -->
+        <div class="search-popover" id="searchPopover" style="display: none;">
+          <div class="search-pop-section">
+            <div class="search-pop-header">Filenames</div>
+            <div class="search-pop-item" id="searchPopFilename">
+              <span class="search-pop-match">Name Contains "<span class="search-pop-query"></span>"</span>
+            </div>
+          </div>
+          <div class="search-pop-section">
+            <div class="search-pop-header">Content</div>
+            <div class="search-pop-item" id="searchPopContent">
+              <span class="search-pop-match">Contains "<span class="search-pop-query"></span>"</span>
+            </div>
+          </div>
+          <div class="search-pop-section" id="searchPopTagsSection" style="display: none;">
+            <div class="search-pop-header">Tags</div>
+            <div id="searchPopTagsList"></div>
+          </div>
+          <div class="search-pop-section">
+            <div class="search-pop-header">Quick Filters</div>
+            <div class="search-pop-item" data-filter-kind="image">
+              <span class="search-pop-badge img">IMG</span> Images & Photos
+            </div>
+            <div class="search-pop-item" data-filter-kind="document">
+              <span class="search-pop-badge doc">DOC</span> Documents & PDFs
+            </div>
+            <div class="search-pop-item" data-filter-kind="code">
+              <span class="search-pop-badge code">DEV</span> Code & Scripts
+            </div>
+            <div class="search-pop-item" data-filter-kind="folder">
+              <span class="search-pop-badge dir">DIR</span> Folders Only
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings & Preferences (Right of Search Bar) -->
+      <button class="tool-btn icon-only" id="btnToolbarSettings" title="Settings & Preferences">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </nav>
+
+    <!-- Main Workspace Area -->
+    <main class="main-layout" id="mainLayout">
+      <div class="sidebar-backdrop" id="sidebarBackdrop" style="display: none;"></div>
+      <!-- Customizable Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <!-- Top Quick Access (Unsectioned: Recents, Shared) -->
+        <ul class="sidebar-list sidebar-top-nav" id="sidebarTopNav">
+          <li class="sidebar-item" id="sidebarRecents" data-special="recents" title="Recents">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="sidebar-item-label">Recents</span>
+          </li>
+          <li class="sidebar-item" id="sidebarShared" data-special="shared" title="Shared">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="sidebar-item-label">Shared</span>
+          </li>
+        </ul>
+
+        <!-- Favorites Section -->
+        <div class="sidebar-section" id="sidebarSectionFavorites">
+          <div class="sidebar-section-header" data-toggle-section="favorites" title="Toggle Favorites Section">
+            <span class="sidebar-section-title">
+              <svg class="icon sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              Favorites
+            </span>
+            <button class="sidebar-add-pin" id="btnAddPinCurrent" title="Pin Current Folder">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <ul class="sidebar-list" id="sidebarFavoritesList">
+            <li class="sidebar-item" id="sidebarHome" data-special="home" title="Home">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+              <span class="sidebar-item-label">Home</span>
+            </li>
+            <li class="sidebar-item" id="sidebarDesktop" data-special="desktop" title="Desktop">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <span class="sidebar-item-label">Desktop</span>
+            </li>
+            <li class="sidebar-item" id="sidebarDocuments" data-special="documents" title="Documents">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="sidebar-item-label">Documents</span>
+            </li>
+            <li class="sidebar-item" id="sidebarDownloads" data-special="downloads" title="Downloads">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span class="sidebar-item-label">Downloads</span>
+            </li>
+            <li class="sidebar-item" id="sidebarPictures" data-special="pictures" title="Pictures">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span class="sidebar-item-label">Pictures</span>
+            </li>
+            <li class="sidebar-item" id="sidebarRecycleBin" data-special="recycle-bin" title="Recycle Bin (Click to open, drag files here to delete)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              <span class="sidebar-item-label">Recycle Bin</span>
+              <span class="sidebar-item-badge" id="sidebarRecycleCount" style="display: none;">0</span>
+            </li>
+          </ul>
+          <ul class="sidebar-list" id="sidebarPinsList">
+            <!-- Dynamic user pins -->
+          </ul>
+        </div>
+
+        <!-- Storage Drives Section -->
+        <div class="sidebar-section" id="sidebarSectionDrives">
+          <div class="sidebar-section-header" data-toggle-section="drives" title="Toggle Storage Drives Section">
+            <span class="sidebar-section-title">
+              <svg class="icon sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              Storage Drives
+            </span>
+          </div>
+          <ul class="sidebar-list" id="sidebarDrivesList">
+            <!-- Dynamic storage drives (OS Disk, Local Drive (D:), Local Drive (E:)) -->
+          </ul>
+        </div>
+
+        <!-- Colored Tags Section -->
+        <div class="sidebar-section" id="sidebarSectionTags">
+          <div class="sidebar-section-header" data-toggle-section="tags" title="Toggle Tags Section">
+            <span class="sidebar-section-title">
+              <svg class="icon sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              Tags
+            </span>
+          </div>
+          <ul class="sidebar-list tags-list" id="sidebarTagsList">
+            <li class="sidebar-item tag-item" data-tag="red" title="Red Tag">
+              <span class="tag-dot red"></span>
+              <span class="sidebar-item-label">Red</span>
+              <span class="tag-badge" id="tagCountRed">0</span>
+            </li>
+            <li class="sidebar-item tag-item" data-tag="orange" title="Orange Tag">
+              <span class="tag-dot orange"></span>
+              <span class="sidebar-item-label">Orange</span>
+              <span class="tag-badge" id="tagCountOrange">0</span>
+            </li>
+            <li class="sidebar-item tag-item" data-tag="yellow" title="Yellow Tag">
+              <span class="tag-dot yellow"></span>
+              <span class="sidebar-item-label">Yellow</span>
+              <span class="tag-badge" id="tagCountYellow">0</span>
+            </li>
+            <li class="sidebar-item tag-item" data-tag="green" title="Green Tag">
+              <span class="tag-dot green"></span>
+              <span class="sidebar-item-label">Green</span>
+              <span class="tag-badge" id="tagCountGreen">0</span>
+            </li>
+            <li class="sidebar-item tag-item" data-tag="blue" title="Blue Tag">
+              <span class="tag-dot blue"></span>
+              <span class="sidebar-item-label">Blue</span>
+              <span class="tag-badge" id="tagCountBlue">0</span>
+            </li>
+            <li class="sidebar-item tag-item" data-tag="purple" title="Purple Tag">
+              <span class="tag-dot purple"></span>
+              <span class="sidebar-item-label">Purple</span>
+              <span class="tag-badge" id="tagCountPurple">0</span>
+            </li>
+            <li class="sidebar-item tag-item" data-tag="gray" title="Gray Tag">
+              <span class="tag-dot gray"></span>
+              <span class="sidebar-item-label">Gray</span>
+              <span class="tag-badge" id="tagCountGray">0</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Sidebar Footer Preferences -->
+        <div class="sidebar-footer">
+          <li class="sidebar-item" id="sidebarSettings" title="Preferences & Settings (Ctrl+,)" style="list-style: none;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="sidebar-item-label">Settings</span>
+            <kbd class="kbd-hint" style="margin-left: auto; font-size: 10px; color: var(--text-dim);">Ctrl+,</kbd>
+          </li>
+        </div>
+      </aside>
+
+      <div class="sidebar-resizer" id="sidebarResizer"></div>
+
+      <!-- File Content Container (Single or Dual Pane) -->
+      <section class="panes-container" id="panesContainer">
+        <!-- Primary Active Pane -->
+        <div class="file-pane active-pane" id="primaryPane" data-pane-id="primary">
+          <!-- Recycle Bin Action Banner -->
+          <div class="recycle-bin-banner" id="recycleBinBanner" style="display: none;">
+            <div class="recycle-bin-banner-info">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; color: var(--accent);"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              <span class="recycle-bin-banner-title">Recycle Bin</span>
+              <span class="recycle-bin-banner-meta" id="recycleBinBannerMeta">0 items</span>
+            </div>
+            <div class="recycle-bin-banner-actions">
+              <button class="tool-btn" id="btnRestoreAllRecycle" title="Restore all deleted items to their original locations">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                <span>Restore All</span>
+              </button>
+              <button class="tool-btn danger" id="btnEmptyRecycleView" title="Permanently delete all items in Recycle Bin">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>Empty Recycle Bin</span>
+              </button>
+            </div>
+          </div>
+          <div class="pane-view-viewport" id="primaryViewport">
+            <!-- Rendered view: Columns, List, or Grid -->
+          </div>
+        </div>
+
+        <!-- Secondary Pane (Split View) -->
+        <div class="pane-divider" id="paneDivider" style="display: none;"></div>
+        <div class="file-pane secondary-pane" id="secondaryPane" data-pane-id="secondary" style="display: none;">
+          <div class="secondary-pane-header">
+            <div class="secondary-pane-nav">
+              <button class="tool-btn icon-only" id="btnSecondaryUp" title="Up to Parent Directory (Alt+Up)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+              <button class="tool-btn icon-only" id="btnSecondarySwap" title="Swap Left and Right Panes">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+              </button>
+              <div class="secondary-pane-drives" id="secondaryPaneDrives"></div>
+            </div>
+            <span class="secondary-pane-title" id="secondaryPanePath">D:\</span>
+            <div class="secondary-pane-actions">
+              <span class="secondary-pane-count" id="secondaryPaneCount">0 items</span>
+              <button class="btn-close-secondary" id="btnCloseSecondary" title="Close Split Pane">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="pane-view-viewport" id="secondaryViewport">
+            <!-- Rendered secondary view -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Preview Pane / Inspector (Reference Image 1) -->
+      <div class="sidebar-resizer" id="previewPaneResizer" style="display: none;"></div>
+      <aside class="preview-pane" id="previewPane" style="display: none;">
+        <div class="pp-header">
+          <div class="pp-header-title">Inspector</div>
+          <button class="btn-close-secondary" id="btnClosePreviewPane" title="Close Inspector">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="pp-scroll" id="previewPaneBody">
+          <!-- Populated dynamically -->
+        </div>
+      </aside>
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="statusbar" id="statusbar">
+      <div class="statusbar-left">
+        <span id="statusItemCount">0 items</span>
+        <span class="statusbar-dot"></span>
+        <span id="statusSelection">None selected</span>
+      </div>
+
+      <div class="statusbar-center">
+        <span id="statusDriveFree">Free space calculating...</span>
+      </div>
+
+      <div class="statusbar-right">
+        <div class="zoom-slider-wrapper gear-slider-wrapper" id="zoomSliderContainer" style="display: none;">
+          <button class="gear-step-btn" id="gearZoomDown" title="Gear Down (Smaller Icons)" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <div class="gear-track-container" id="gearTrackContainer" title="Icon Size: Gear 2 (Standard)">
+            <div class="gear-track-ticks" id="gearTrackTicks">
+              <span class="gear-tick active" data-gear="1" title="Gear 1: Compact (76px)"></span>
+              <span class="gear-tick active" data-gear="2" title="Gear 2: Standard (108px)"></span>
+              <span class="gear-tick" data-gear="3" title="Gear 3: Large (144px)"></span>
+              <span class="gear-tick" data-gear="4" title="Gear 4: Jumbo (184px)"></span>
+            </div>
+            <input type="range" class="gear-slider-input" id="gridZoomSlider" min="1" max="4" value="2" step="1" aria-label="Icon Size Gear" />
+          </div>
+          <button class="gear-step-btn" id="gearZoomUp" title="Gear Up (Larger Icons)" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M9 3v18M3 9h18" stroke-opacity="0.35" stroke-dasharray="2 2"/></svg>
+          </button>
+          <span class="gear-pill-badge" id="gearPillBadge" title="Current Gear">G2</span>
+        </div>
+        <span class="status-mode" id="statusViewMode">Columns</span>
+      </div>
+    </footer>
+
+    <!-- Quick Look Modal Overlay (Space Bar Preview) -->
+    <div class="quicklook-overlay" id="quickLookOverlay" style="display: none;">
+      <div class="quicklook-dialog" id="quickLookDialog">
+        <div class="quicklook-header">
+          <div class="quicklook-meta">
+            <span class="quicklook-title" id="qlTitle">filename.ext</span>
+            <span class="quicklook-sub" id="qlSubtitle">1.4 MB - Modified Sep 24, 2026</span>
+          </div>
+          
+          <div class="quicklook-actions">
+            <!-- Tag selector dropdown -->
+            <div class="ql-tag-picker" id="qlTagPicker">
+              <button class="ql-tag-trigger" id="qlTagTrigger" title="Set Color Tag">
+                <span class="tag-dot" id="qlCurrentTagDot"></span>
+                <span>Tag</span>
+              </button>
+              <div class="ql-tags-dropdown" id="qlTagsDropdown">
+                <span class="ql-tag-option" data-tag="">None</span>
+                <span class="ql-tag-option tag-dot red" data-tag="red"></span>
+                <span class="ql-tag-option tag-dot orange" data-tag="orange"></span>
+                <span class="ql-tag-option tag-dot yellow" data-tag="yellow"></span>
+                <span class="ql-tag-option tag-dot green" data-tag="green"></span>
+                <span class="ql-tag-option tag-dot blue" data-tag="blue"></span>
+                <span class="ql-tag-option tag-dot purple" data-tag="purple"></span>
+              </div>
+            </div>
+
+            <!-- Image Controls: Rotate & Zoom (macOS Quick Look Parity) -->
+            <div class="ql-image-tools" id="qlImageTools" style="display: none;">
+              <button class="ql-btn icon-only" id="qlBtnRotate" title="Rotate 90° Clockwise (R)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              </button>
+              <button class="ql-btn icon-only" id="qlBtnFlipH" title="Flip Horizontal (H)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><polyline points="8 6 4 12 8 18"/><polyline points="16 6 20 12 16 18"/><line x1="4" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="20" y2="12"/></svg>
+              </button>
+              <div class="ql-zoom-group">
+                <button class="ql-btn icon-only" id="qlBtnZoomOut" title="Zoom Out (-)">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
+                <button class="ql-btn ql-zoom-badge" id="qlBtnZoomFit" title="Fit to Screen / 100% (0)">
+                  <span id="qlZoomLabel">Fit</span>
+                </button>
+                <button class="ql-btn icon-only" id="qlBtnZoomIn" title="Zoom In (+)">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <button class="ql-btn" id="qlBtnOpenVlc" title="Play with VLC" style="display: none;">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #f97316;"><path d="M12 2l-7 16h14L12 2z" stroke="#f97316" fill="#f97316" fill-opacity="0.15"/><line x1="8.5" y1="10" x2="15.5" y2="10" stroke="#f97316"/><line x1="6.8" y1="14" x2="17.2" y2="14" stroke="#f97316"/><path d="M3 20c0 1.1 4 2 9 2s9-.9 9-2" stroke="#ea580c"/></svg>
+              <span>Play in VLC</span>
+            </button>
+            <button class="ql-btn" id="qlBtnOpenDefault" title="Open in default program">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span>Open</span>
+            </button>
+            <button class="ql-btn icon-only" id="qlBtnInfo" title="Toggle Inspector / EXIF Info (I)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
+            <button class="ql-btn icon-only" id="qlBtnMaximize" title="Toggle Maximize / Full View (F)">
+              <svg class="icon ql-icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <svg class="icon ql-icon-compress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+            <button class="ql-btn icon-only" id="qlBtnClose" title="Close (Space or Esc)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="quicklook-body" id="qlBody">
+          <!-- Rendered media/code/doc preview -->
+        </div>
+
+        <!-- Floating Edge Navigation Buttons -->
+        <button class="ql-nav-edge ql-nav-prev" id="qlNavPrev" title="Previous Item (Left Arrow / Up Arrow)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="ql-nav-edge ql-nav-next" id="qlNavNext" title="Next Item (Right Arrow / Down Arrow)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <!-- Floating Glass Info / EXIF HUD -->
+        <div class="ql-info-hud" id="qlInfoHud" style="display: none;">
+          <div class="ql-info-hud-header">
+            <span class="ql-info-hud-title">Inspector &amp; EXIF</span>
+            <button class="ql-info-hud-close" id="qlInfoHudClose" title="Close HUD (I)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ql-info-hud-body" id="qlInfoHudBody">
+            <!-- Dynamically rendered metadata -->
+          </div>
+        </div>
+
+        <div class="quicklook-footer">
+          <div class="ql-nav-hint">
+            <kbd>▲</kbd> <kbd>▼</kbd> Navigate files &nbsp;·&nbsp; <kbd>Space</kbd> or <kbd>Esc</kbd> Dismiss
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+            <span class="ql-index-indicator" id="qlIndexIndicator"></span>
+            <div class="ql-location" id="qlLocation">Path info</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instant 0ms Custom Context Menu -->
+    <div class="context-menu" id="contextMenu" style="display: none;">
+      <div class="ctx-tags-row">
+        <span class="ctx-tag-btn empty" data-tag="" title="No Tag"></span>
+        <span class="ctx-tag-btn red" data-tag="red" title="Red"></span>
+        <span class="ctx-tag-btn orange" data-tag="orange" title="Orange"></span>
+        <span class="ctx-tag-btn yellow" data-tag="yellow" title="Yellow"></span>
+        <span class="ctx-tag-btn green" data-tag="green" title="Green"></span>
+        <span class="ctx-tag-btn blue" data-tag="blue" title="Blue"></span>
+        <span class="ctx-tag-btn purple" data-tag="purple" title="Purple"></span>
+        <span class="ctx-tag-btn gray" data-tag="gray" title="Gray"></span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="ctxOpen">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </span>
+        <span>Open</span>
+        <kbd class="ctx-shortcut">Enter</kbd>
+      </div>
+      <div class="ctx-item" id="ctxQuickLook">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </span>
+        <span>Quick Look</span>
+        <kbd class="ctx-shortcut">Space</kbd>
+      </div>
+      <div class="ctx-item" id="ctxGetInfo">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </span>
+        <span>Get Info</span>
+        <kbd class="ctx-shortcut">Ctrl+I</kbd>
+      </div>
+      <div class="ctx-item" id="ctxShare">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </span>
+        <span>Share...</span>
+        <kbd class="ctx-shortcut">Ctrl+Alt+S</kbd>
+      </div>
+      <div class="ctx-divider" id="ctxVlcDivider" style="display: none;"></div>
+      <div class="ctx-item" id="ctxVlcPlay" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #f97316;"><path d="M12 2l-7 16h14L12 2z" stroke="#f97316" fill="#f97316" fill-opacity="0.15"/><line x1="8.5" y1="10" x2="15.5" y2="10" stroke="#f97316"/><line x1="6.8" y1="14" x2="17.2" y2="14" stroke="#f97316"/><path d="M3 20c0 1.1 4 2 9 2s9-.9 9-2" stroke="#ea580c"/></svg>
+        </span>
+        <span id="ctxVlcPlayText">Play in VLC</span>
+      </div>
+      <div class="ctx-item" id="ctxVlcEnqueue" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </span>
+        <span>Add to VLC Playlist</span>
+      </div>
+      <div class="ctx-divider" id="ctxArchiveDivider" style="display: none;"></div>
+      <div class="ctx-item" id="ctxExtractAll" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </span>
+        <span id="ctxExtractAllText">Extract All...</span>
+      </div>
+      <div class="ctx-item" id="ctxExtractHere" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+        </span>
+        <span>Extract Here</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="ctxCut">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        </span>
+        <span>Cut</span>
+        <kbd class="ctx-shortcut">Ctrl+X</kbd>
+      </div>
+      <div class="ctx-item" id="ctxCopy">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>
+        <span>Copy</span>
+        <kbd class="ctx-shortcut">Ctrl+C</kbd>
+      </div>
+      <div class="ctx-item" id="ctxDuplicate">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </span>
+        <span>Duplicate</span>
+        <kbd class="ctx-shortcut">Ctrl+D</kbd>
+      </div>
+      <div class="ctx-item" id="ctxPaste">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        </span>
+        <span>Paste</span>
+        <kbd class="ctx-shortcut">Ctrl+V</kbd>
+      </div>
+      <div class="ctx-divider" id="ctxCreateDivider"></div>
+      <div class="ctx-item" id="ctxNewFolder">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        </span>
+        <span>New Folder</span>
+        <kbd class="ctx-shortcut">Ctrl+Shift+N</kbd>
+      </div>
+      <div class="ctx-item" id="ctxNewFile">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </span>
+        <span>New Text Document</span>
+      </div>
+      <div class="ctx-item" id="ctxMoveOpposite">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </span>
+        <span>Move to Other Pane</span>
+      </div>
+      <div class="ctx-item" id="ctxCopyOpposite">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </span>
+        <span>Copy to Other Pane</span>
+      </div>
+      <div class="ctx-divider" id="ctxCompressDivider"></div>
+      <div class="ctx-item" id="ctxCompressZip">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 4v16"/><path d="M14 4v16"/><path d="M10 8h4"/><path d="M10 12h4"/><path d="M10 16h4"/></svg>
+        </span>
+        <span>Compress to ZIP</span>
+      </div>
+      <div class="ctx-item" id="ctxCompress7z">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </span>
+        <span>Compress to 7Z</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="ctxPin">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A4 4 0 0 1 14 9V4h1a1 1 0 0 0 0-2H9a1 1 0 0 0 0 2h1v5a4 4 0 0 1-2.11 3.56l-1.78.89A2 2 0 0 0 5 15.24Z"/></svg>
+        </span>
+        <span>Pin to Sidebar</span>
+      </div>
+      <div class="ctx-item" id="ctxRename">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+        </span>
+        <span>Rename</span>
+        <kbd class="ctx-shortcut">F2</kbd>
+      </div>
+      <div class="ctx-item" id="ctxBatchRename" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </span>
+        <span>Batch Rename...</span>
+      </div>
+      <div class="ctx-item" id="ctxNewFolderWithSelection" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        </span>
+        <span id="ctxNewFolderWithSelectionText">New Folder with Selection</span>
+        <kbd class="ctx-shortcut">Ctrl+Alt+N</kbd>
+      </div>
+      <div class="ctx-item" id="ctxFindDuplicates">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"/><rect x="8" y="3" width="13" height="13" rx="2"/><path d="M12 8h5M12 11h3"/></svg>
+        </span>
+        <span>Find Duplicates in Folder...</span>
+        <kbd class="ctx-shortcut">Ctrl+Shift+U</kbd>
+      </div>
+      <div class="ctx-item" id="ctxManageStorage">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>
+        </span>
+        <span>Manage Storage...</span>
+        <kbd class="ctx-shortcut">Ctrl+Shift+M</kbd>
+      </div>
+      <div class="ctx-item" id="ctxRotateClockwise" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        </span>
+        <span>Rotate Right</span>
+      </div>
+      <div class="ctx-item danger" id="ctxDelete">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </span>
+        <span>Delete to Trash</span>
+        <kbd class="ctx-shortcut">Del</kbd>
+      </div>
+      <!-- Recycle Bin Specific Context Actions -->
+      <div class="ctx-item" id="ctxRestore" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </span>
+        <span>Restore</span>
+      </div>
+      <div class="ctx-item danger" id="ctxDeletePermanently" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </span>
+        <span>Delete Permanently</span>
+        <kbd class="ctx-shortcut">Shift+Del</kbd>
+      </div>
+      <div class="ctx-item" id="ctxRestoreAll" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </span>
+        <span>Restore All Items</span>
+      </div>
+      <div class="ctx-item danger" id="ctxEmptyRecycle" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </span>
+        <span>Empty Recycle Bin</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="ctxCopyPath">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </span>
+        <span>Copy as Path</span>
+        <kbd class="ctx-shortcut">Ctrl+Shift+C</kbd>
+      </div>
+      <div class="ctx-item" id="ctxSelectAll">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </span>
+        <span>Select All</span>
+        <kbd class="ctx-shortcut">Ctrl+A</kbd>
+      </div>
+      <div class="ctx-item" id="ctxInvertSelect">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/></svg>
+        </span>
+        <span>Invert Selection</span>
+        <kbd class="ctx-shortcut">Ctrl+Shift+I</kbd>
+      </div>
+      <div class="ctx-item" id="ctxUp" style="display: none;">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+        </span>
+        <span id="ctxUpText">Up to Parent Folder</span>
+        <kbd class="ctx-shortcut">Alt+Up</kbd>
+      </div>
+      <div class="ctx-item" id="ctxRefresh">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </span>
+        <span>Refresh</span>
+        <kbd class="ctx-shortcut">F5</kbd>
+      </div>
+      <div class="ctx-item" id="ctxTerminal">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </span>
+        <span>Open in Terminal</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="ctxProperties">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </span>
+        <span>Properties</span>
+        <kbd class="ctx-shortcut">Alt+Enter</kbd>
+      </div>
+      <div class="ctx-item" id="ctxViewOptions">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9h7"/><path d="M14 15h7"/></svg>
+        </span>
+        <span>Show View Options</span>
+        <kbd class="ctx-shortcut">Ctrl+J</kbd>
+      </div>
+      <div class="ctx-item" id="ctxPreferences">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </span>
+        <span>Preferences...</span>
+        <kbd class="ctx-shortcut">Ctrl+,</kbd>
+      </div>
+    </div>
+
+    <!-- Generic Modal Dialog (Create file/folder, rename, confirm) -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none;">
+      <div class="modal-card" id="modalCard">
+        <h3 class="modal-title" id="modalTitle">Dialog Title</h3>
+        <p class="modal-desc" id="modalDesc">Dialog Description</p>
+        <div class="modal-input-wrapper" id="modalInputWrapper">
+          <input type="text" class="modal-input" id="modalInput" spellcheck="false" />
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn btn-secondary" id="modalBtnCancel">Cancel</button>
+          <button class="modal-btn btn-primary" id="modalBtnConfirm">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preferences & Settings Modal -->
+    <div class="modal-overlay" id="settingsModal" style="display: none;">
+      <div class="settings-modal-card">
+        <!-- Header -->
+        <div class="settings-header">
+          <div class="settings-header-left">
+            <div class="settings-header-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <div>
+              <div class="settings-header-title">Preferences & Settings</div>
+              <div class="settings-header-sub">Configure layout, browsing behavior, media preview, and Windows integration</div>
+            </div>
+          </div>
+          <button class="tool-btn icon-only" id="btnCloseSettingsModal" style="border: none;" title="Close Settings">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="settings-tab-bar" id="settingsTabBar">
+          <button class="settings-tab-btn active" data-tab="general">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            General
+          </button>
+          <button class="settings-tab-btn" data-tab="appearance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            Appearance
+          </button>
+          <button class="settings-tab-btn" data-tab="sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+            Sidebar
+          </button>
+          <button class="settings-tab-btn" data-tab="shortcuts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="10" y2="8"/><line x1="14" y1="8" x2="14" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="10" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="14" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
+            Shortcuts
+          </button>
+          <button class="settings-tab-btn" data-tab="media">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Media & Preview
+          </button>
+          <button class="settings-tab-btn" data-tab="system">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            System & Advanced
+          </button>
+        </div>
+
+        <!-- Body & Panels -->
+        <div class="settings-body">
+          <!-- 1. GENERAL PANEL -->
+          <div class="settings-panel active" id="settingsPanelGeneral">
+            <div class="settings-section">
+              <div class="settings-section-title">Navigation & Startup</div>
+              
+              <!-- Startup Folder Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default Startup Location</div>
+                  <div class="settings-row-desc">Location opened when launching MyFiles or creating a new tab</div>
+                </div>
+                <div class="settings-row-ctrl" style="flex-direction: column; align-items: flex-end; gap: 6px;">
+                  <select id="settingsStartupFolder" class="settings-select">
+                    <option value="firstDrive">Primary Drive (C:\)</option>
+                    <option value="home">User Home Folder</option>
+                    <option value="desktop">Desktop</option>
+                    <option value="documents">Documents</option>
+                    <option value="downloads">Downloads</option>
+                    <option value="custom">Custom Path...</option>
+                  </select>
+                  <div id="settingsStartupCustomWrap" style="display: none;">
+                    <input type="text" id="settingsStartupCustom" class="settings-input-text" placeholder="e.g. D:\Projects" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Open Action Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Open Item Interaction</div>
+                  <div class="settings-row-desc">Action required to enter folders and launch files</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsOpenAction" class="settings-select">
+                    <option value="double">Double-click to open (single-click selects)</option>
+                    <option value="single">Single-click to open</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Default Search Scope Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default Search Scope</div>
+                  <div class="settings-row-desc">Initial folder depth when initiating search queries</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsSearchScope" class="settings-select">
+                    <option value="current">Current Folder & Subdirectories</option>
+                    <option value="all">Entire Primary Drive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Workflow Safety & Ergonomics</div>
+
+              <!-- Item Checkboxes Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Item Selection Checkboxes</div>
+                  <div class="settings-row-desc">Display selection boxes beside items for multi-selection without Ctrl/Shift</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckboxes" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Confirm Deletion Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Deletion Confirmation Prompt</div>
+                  <div class="settings-row-desc">Display confirmation alert before moving items to Recycle Bin</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsConfirmDelete" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Auto-refresh Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Auto-Refresh Directory</div>
+                  <div class="settings-row-desc">Automatically update file listing when window regains focus</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckAutoRefresh" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Date & Time Format</div>
+
+              <!-- Date Format Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Timestamp Display Style</div>
+                  <div class="settings-row-desc">Format used for Date Modified and Date Created across all views</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDateFormat" class="settings-select">
+                    <option value="relative">Relative (Today at 14:30 / Yesterday)</option>
+                    <option value="locale">Standard Locale (Sep 24, 2026, 2:30 PM)</option>
+                    <option value="iso">ISO Format (YYYY-MM-DD HH:mm)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. APPEARANCE PANEL -->
+          <div class="settings-panel" id="settingsPanelAppearance">
+            <div class="settings-section">
+              <div class="settings-section-title">Color & Theming</div>
+
+              <!-- Theme Mode Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Appearance Mode</div>
+                  <div class="settings-row-desc">Select dark obsidian, crisp light, or follow Windows system</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <div class="theme-segmented-ctrl" id="settingsThemeCtrl" style="margin: 0;">
+                    <button class="theme-opt-btn" data-theme="light">Light</button>
+                    <button class="theme-opt-btn" data-theme="dark">Dark</button>
+                    <button class="theme-opt-btn" data-theme="system">Auto</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Accent Color Swatches Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Accent Color Tint</div>
+                  <div class="settings-row-desc">Harmonized accent color applied to active selections, tabs, and buttons</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <div class="settings-swatches" id="settingsAccentSwatches">
+                    <button class="settings-swatch active" data-accent="blue" title="Pacific Blue"></button>
+                    <button class="settings-swatch" data-accent="emerald" title="Emerald Forest"></button>
+                    <button class="settings-swatch" data-accent="purple" title="Royal Violet"></button>
+                    <button class="settings-swatch" data-accent="orange" title="Sunset Amber"></button>
+                    <button class="settings-swatch" data-accent="rose" title="Crimson Rose"></button>
+                    <button class="settings-swatch" data-accent="graphite" title="Slate Graphite"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Layout & View Defaults</div>
+
+              <!-- Layout Density Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Information Density</div>
+                  <div class="settings-row-desc">Standard spacing or compact rows for viewing more items at once</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDensity" class="settings-select">
+                    <option value="standard">Standard (Relaxed)</option>
+                    <option value="compact">Compact (Dense)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Default View Mode Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default View Mode</div>
+                  <div class="settings-row-desc">Initial layout mode when navigating into folders</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDefaultView" class="settings-select">
+                    <option value="grid">Grid (Icons)</option>
+                    <option value="list">List (Tree Details)</option>
+                    <option value="columns">Columns (Miller)</option>
+                    <option value="gallery">Gallery (Hero Preview)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Thumbnail Size Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Icon / Thumbnail Size</div>
+                  <div class="settings-row-desc">Default icon dimensions in Grid and Column views</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsThumbSize" class="settings-select">
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Item Display Rules</div>
+
+              <!-- File Extensions Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Always Show File Extensions</div>
+                  <div class="settings-row-desc">Include file extensions (.png, .pdf, .docx) in displayed file titles</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckExtensions" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Hidden & System Files Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Hidden & System Files</div>
+                  <div class="settings-row-desc">Show dotfiles and protected operating system items (Ctrl+H)</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckHidden" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">List View Columns</div>
+
+              <!-- Column: Date Modified -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Date Modified Column</div>
+                  <div class="settings-row-desc">Display last modified timestamp in list rows</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckColDate" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Column: Kind / Type -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Type / Kind Column</div>
+                  <div class="settings-row-desc">Display document category and MIME format in list rows</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckColType" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Column: File Size -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">File Size Column</div>
+                  <div class="settings-row-desc">Display byte and humanized capacity column in list rows</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckColSize" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Column: Tag Indicator -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Color Tag Column</div>
+                  <div class="settings-row-desc">Display colored dot badge indicator in list rows</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckColTag" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. SIDEBAR PANEL -->
+          <div class="settings-panel" id="settingsPanelSidebar">
+            <div class="settings-section">
+              <div class="settings-section-title">Sidebar Sections</div>
+
+              <!-- Section: Recents & Shared -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Recents & Shared Quick Access</div>
+                  <div class="settings-row-desc">Show Recents and Shared virtual locations at the top of the sidebar</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckSidebarRecents" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Section: Favorites -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Favorites & Pinned Folders</div>
+                  <div class="settings-row-desc">Show Home, Desktop, Documents, Downloads, and custom pinned folders</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckSidebarFavorites" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Section: Drives -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Storage Drives</div>
+                  <div class="settings-row-desc">Show detected physical drives, SSDs, USB volumes, and partitions</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckSidebarDrives" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Section: Tags -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Color Tags Section</div>
+                  <div class="settings-row-desc">Show colored label filter list in the sidebar</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckSidebarTags" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Color Tag Filter Visibility</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Select which colored tags appear in the sidebar filter list:</div>
+              <div class="settings-tag-grid" id="settingsTagVisibilityGrid">
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowRed" data-tag="red" checked />
+                  <span class="tag-dot red"></span>
+                  <span>Red</span>
+                </label>
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowOrange" data-tag="orange" checked />
+                  <span class="tag-dot orange"></span>
+                  <span>Orange</span>
+                </label>
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowYellow" data-tag="yellow" checked />
+                  <span class="tag-dot yellow"></span>
+                  <span>Yellow</span>
+                </label>
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowGreen" data-tag="green" checked />
+                  <span class="tag-dot green"></span>
+                  <span>Green</span>
+                </label>
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowBlue" data-tag="blue" checked />
+                  <span class="tag-dot blue"></span>
+                  <span>Blue</span>
+                </label>
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowPurple" data-tag="purple" checked />
+                  <span class="tag-dot purple"></span>
+                  <span>Purple</span>
+                </label>
+                <label class="settings-tag-label">
+                  <input type="checkbox" id="settingsTagShowGray" data-tag="gray" checked />
+                  <span class="tag-dot gray"></span>
+                  <span>Gray</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. SHORTCUTS & HOTKEYS PANEL -->
+          <div class="settings-panel" id="settingsPanelShortcuts">
+            <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+              <input type="text" id="settingsShortcutSearch" class="settings-input-text" placeholder="Filter shortcuts by name or keys (e.g. preview, terminal, delete)..." style="width: 100%; padding: 7px 12px;" />
+            </div>
+
+            <div class="settings-shortcuts-container" id="settingsShortcutsContainer">
+              <!-- Navigation -->
+              <div class="settings-section shortcut-section-block">
+                <div class="settings-shortcut-category">Navigation</div>
+                <div class="settings-shortcut-table">
+                  <div class="settings-shortcut-row" data-search="parent up folder back">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Go to Parent Folder</div>
+                      <div class="settings-shortcut-desc">Navigate up to enclosing directory</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Alt</kbd><span>+</span><kbd>↑</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="history back previous">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Back / Forward in History</div>
+                      <div class="settings-shortcut-desc">Traverse previous folder locations</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Alt</kbd><span>+</span><kbd>←</kbd><span>/</span><kbd>→</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="go to folder path finder jump">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Go to Folder...</div>
+                      <div class="settings-shortcut-desc">Direct path navigation modal with quick chips</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>G</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="home user folder">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Go to Home Directory</div>
+                      <div class="settings-shortcut-desc">Open user profile directory</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>H</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="documents folder">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Go to Documents</div>
+                      <div class="settings-shortcut-desc">Open user documents directory</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>O</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="downloads folder">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Go to Downloads</div>
+                      <div class="settings-shortcut-desc">Open user downloads directory</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>L</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="address path edit">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Focus Address Bar</div>
+                      <div class="settings-shortcut-desc">Directly edit the current folder path</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>L</kbd></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Views & Layout -->
+              <div class="settings-section shortcut-section-block">
+                <div class="settings-shortcut-category">Views & Layout</div>
+                <div class="settings-shortcut-table">
+                  <div class="settings-shortcut-row" data-search="grid icons view mode">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Grid View</div>
+                      <div class="settings-shortcut-desc">Display folder items as icon thumbnails</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>1</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="list tree details view mode">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">List View</div>
+                      <div class="settings-shortcut-desc">Display folder items in detailed hierarchy list</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>2</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="columns miller view mode">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Columns (Miller) View</div>
+                      <div class="settings-shortcut-desc">Display hierarchical columns navigation</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>3</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="gallery hero view mode">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Gallery View</div>
+                      <div class="settings-shortcut-desc">Display large hero media preview carousel</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>4</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="view options inspector customize">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Show View Options</div>
+                      <div class="settings-shortcut-desc">Folder view options panel (macOS style)</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>J</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="sidebar toggle show hide">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Toggle Sidebar</div>
+                      <div class="settings-shortcut-desc">Show or hide the navigation sidebar</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>B</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="preview inspector pane panel">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Toggle Preview Inspector</div>
+                      <div class="settings-shortcut-desc">Show or hide right-hand detail pane</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>P</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="dual pane split view">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Toggle Split / Dual Pane</div>
+                      <div class="settings-shortcut-desc">Open side-by-side workspace comparison</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>D</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="settings preferences options configuration">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Preferences & Settings</div>
+                      <div class="settings-shortcut-desc">Open application preferences dialog</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>,</kbd></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- File Operations -->
+              <div class="settings-section shortcut-section-block">
+                <div class="settings-shortcut-category">File Operations</div>
+                <div class="settings-shortcut-table">
+                  <div class="settings-shortcut-row" data-search="space quick look preview">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Quick Look Preview</div>
+                      <div class="settings-shortcut-desc">Instant floating media & document inspection</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Space</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="rename f2 powerrename batch">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Rename / PowerRename</div>
+                      <div class="settings-shortcut-desc">Rename active item or batch rename multi-selection</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>F2</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="properties info checksums hash">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Properties & Checksums</div>
+                      <div class="settings-shortcut-desc">File details, timestamps, and hash calculator</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Alt</kbd><span>+</span><kbd>Enter</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="delete recycle bin remove">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Delete to Recycle Bin</div>
+                      <div class="settings-shortcut-desc">Safely recycle selected items</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Delete</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="permanent delete erase remove">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Permanent Delete</div>
+                      <div class="settings-shortcut-desc">Erase selected items without sending to bin</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Shift</kbd><span>+</span><kbd>Delete</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="undo file action">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Undo Last Action</div>
+                      <div class="settings-shortcut-desc">Revert previous move, rename, or file creation</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Z</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="redo file action">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Redo File Action</div>
+                      <div class="settings-shortcut-desc">Reapply undone operation</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Y</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="new folder create directory">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">New Folder</div>
+                      <div class="settings-shortcut-desc">Create a new subfolder in current path</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>N</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="copy path clipboard">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Copy Full Path</div>
+                      <div class="settings-shortcut-desc">Copy path to Windows clipboard</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>C</kbd></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Power Tools -->
+              <div class="settings-section shortcut-section-block">
+                <div class="settings-shortcut-category">Power Tools</div>
+                <div class="settings-shortcut-table">
+                  <div class="settings-shortcut-row" data-search="deduplication duplicate files scan">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Find Duplicate Files</div>
+                      <div class="settings-shortcut-desc">Deep SHA-256 duplicate scan & storage cleanup</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>D</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="terminal shell command powershell wt">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Open Terminal Here</div>
+                      <div class="settings-shortcut-desc">Launch terminal in current folder</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>`</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="hidden dotfiles show">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Toggle Hidden Files</div>
+                      <div class="settings-shortcut-desc">Reveal or conceal dotfiles and system items</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>H</kbd></div>
+                  </div>
+                  <div class="settings-shortcut-row" data-search="preferences settings config modal">
+                    <div class="settings-shortcut-label">
+                      <div class="settings-shortcut-title">Preferences & Settings</div>
+                      <div class="settings-shortcut-desc">Open application preferences dialog</div>
+                    </div>
+                    <div class="settings-shortcut-keys"><kbd>Ctrl</kbd><span>+</span><kbd>,</kbd></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. MEDIA & PREVIEW PANEL -->
+          <div class="settings-panel" id="settingsPanelMedia">
+            <div class="settings-section">
+              <div class="settings-section-title">Quick Look (Spacebar Preview)</div>
+
+              <!-- Enable Quick Look Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Spacebar Quick Look</div>
+                  <div class="settings-row-desc">Press Spacebar on any selected item to display instant floating preview</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckQuickLook" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Auto-play Media Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Auto-Play Audio & Video</div>
+                  <div class="settings-row-desc">Begin media playback automatically upon opening Quick Look</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckAutoplay" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Loop Playback Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Continuous Loop Playback</div>
+                  <div class="settings-row-desc">Automatically restart media when reaching the end of the track</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckLoop" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">External Media Player</div>
+
+              <!-- VLC Integration Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label" style="display: flex; align-items: center; gap: 8px;">
+                    <span>VLC Media Player Engine</span>
+                    <span id="settingsVlcStatusBadge" class="settings-status-badge missing">Checking...</span>
+                  </div>
+                  <div class="settings-row-desc" id="settingsVlcStatusDesc">Use VLC Media Player for external playback of high-definition video and audio files</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckVlc" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. SYSTEM & ADVANCED PANEL -->
+          <div class="settings-panel" id="settingsPanelSystem">
+            <div class="settings-section">
+              <div class="settings-section-title">Windows OS Integration</div>
+
+              <!-- Windows Default File Manager Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default Windows File Manager</div>
+                  <div class="settings-row-desc">Open folders, drives, and directory shortcuts with MyFiles via registry</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <button class="tool-btn btn-primary" id="settingsBtnDefault" style="padding: 4px 12px; font-size: 12px;">
+                    Make Default
+                  </button>
+                  <button class="tool-btn btn-secondary" id="settingsBtnRestoreDefault" style="padding: 4px 12px; font-size: 12px;" title="Reset back to Windows File Explorer">
+                    Restore Explorer
+                  </button>
+                </div>
+              </div>
+
+              <!-- Default Terminal Shell Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default Terminal Shell</div>
+                  <div class="settings-row-desc">Terminal application launched when opening current directory in terminal</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsTerminalShell" class="settings-select">
+                    <option value="wt">Windows Terminal (wt.exe)</option>
+                    <option value="powershell">PowerShell</option>
+                    <option value="cmd">Command Prompt (cmd.exe)</option>
+                    <option value="gitbash">Git Bash</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Archive & Compression Defaults</div>
+
+              <!-- Default Archive Format -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default Compression Format</div>
+                  <div class="settings-row-desc">Container format used when compressing files via toolbar or context menu</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDefaultArchiveFormat" class="settings-select">
+                    <option value="zip">ZIP (.zip) - Maximum Compatibility</option>
+                    <option value="7z">7-Zip (.7z) - High Compression Ratio</option>
+                    <option value="tar.gz">Tarball (.tar.gz) - Unix / Linux</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Default Compression Level -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Compression Level</div>
+                  <div class="settings-row-desc">Balance between processing speed and resulting archive file size</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDefaultArchiveLevel" class="settings-select">
+                    <option value="fast">Fast (Lower Compression, Instant)</option>
+                    <option value="normal">Normal (Standard Balance)</option>
+                    <option value="maximum">Maximum (Smallest Size, Slower)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Auto Open Extracted Folder -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Open Folder After Extraction</div>
+                  <div class="settings-row-desc">Automatically navigate to target directory when archive extraction completes</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="settingsCheckAutoOpenExtracted" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);" checked />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Deduplication Scan Engine</div>
+
+              <!-- Dedup Scan Mode -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Duplicate Detection Algorithm</div>
+                  <div class="settings-row-desc">Verification strategy for identifying duplicate file content</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDedupScanMode" class="settings-select">
+                    <option value="sha256">Exact SHA-256 Hash (100% Cryptographic Match)</option>
+                    <option value="fast">Fast Size & MD5 Match (High Speed)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Dedup Min Size Filter -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Minimum File Size Filter</div>
+                  <div class="settings-row-desc">Skip tiny system or lock files when searching for duplicates</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsDedupMinSize" class="settings-select">
+                    <option value="0">All Files (No size threshold)</option>
+                    <option value="1024">Greater than 1 KB</option>
+                    <option value="1048576">Greater than 1 MB</option>
+                    <option value="10485760">Greater than 10 MB</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Integrity & Checksums</div>
+
+              <!-- Default Checksum Algorithm Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Default Checksum Algorithm</div>
+                  <div class="settings-row-desc">Algorithm used when generating file hashes in Properties (Alt+Enter)</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <select id="settingsChecksumAlgo" class="settings-select">
+                    <option value="sha256">SHA-256 (Cryptographically Secure)</option>
+                    <option value="md5">MD5 (Fast Hash)</option>
+                    <option value="sha1">SHA-1 (Legacy)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Data & Preferences Management</div>
+
+              <!-- Reset Preferences Row -->
+              <div class="settings-row">
+                <div class="settings-row-text">
+                  <div class="settings-row-label">Reset All Preferences</div>
+                  <div class="settings-row-desc">Restore theme, view defaults, layout density, and options to factory defaults</div>
+                </div>
+                <div class="settings-row-ctrl">
+                  <button class="tool-btn" id="settingsBtnResetDefaults" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.35); padding: 4px 12px; font-size: 12px;">
+                    Reset to Defaults
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="settings-footer">
+          <div class="settings-footer-meta">
+            MyFiles Desktop v1.0.0 · Local & Secure
+          </div>
+          <div class="modal-actions" style="margin: 0;">
+            <button class="modal-btn btn-primary" id="btnSettingsDone">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Windows File Properties Modal (Alt+Enter) -->
+    <div class="modal-overlay" id="propertiesModal" style="display: none;">
+      <div class="modal-card" style="width: 460px; max-width: 90vw;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="propFileIcon" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"></div>
+            <div>
+              <div id="propFileName" style="font-weight: 600; font-size: 14px; word-break: break-all;">file.txt</div>
+              <div id="propFileKind" style="font-size: 11px; color: var(--text-muted);">Text Document</div>
+            </div>
+          </div>
+          <button class="tool-btn icon-only" id="btnClosePropModal" style="border: none;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Properties Tabs -->
+        <div class="prop-tabs" style="display: flex; border-bottom: 1px solid var(--border-subtle); margin-bottom: 14px;">
+          <button class="prop-tab-btn active" id="propTabGeneral" style="padding: 6px 14px; background: none; border: none; border-bottom: 2px solid var(--accent); color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 12px;">General</button>
+          <button class="prop-tab-btn" id="propTabChecksums" style="padding: 6px 14px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-size: 12px;">Checksums (Hashes)</button>
+        </div>
+
+        <!-- General Tab Content -->
+        <div id="propContentGeneral">
+          <div class="prop-grid" style="display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; font-size: 12px; align-items: center;">
+            <span style="color: var(--text-muted);">Type of file:</span>
+            <span id="propTypeVal" style="font-weight: 500;">--</span>
+
+            <span style="color: var(--text-muted);">Opens with:</span>
+            <span id="propOpensWithVal" style="font-weight: 500;">Windows Default</span>
+
+            <div style="grid-column: 1 / -1; height: 1px; background: var(--border-subtle); margin: 4px 0;"></div>
+
+            <span style="color: var(--text-muted);">Location:</span>
+            <span id="propLocationVal" style="word-break: break-all; font-family: monospace; font-size: 11px;">--</span>
+
+            <span style="color: var(--text-muted);">Size:</span>
+            <span id="propSizeVal" style="font-weight: 500;">--</span>
+
+            <span style="color: var(--text-muted);">Size on disk:</span>
+            <span id="propSizeOnDiskVal" style="font-weight: 500;">--</span>
+
+            <div style="grid-column: 1 / -1; height: 1px; background: var(--border-subtle); margin: 4px 0;"></div>
+
+            <span style="color: var(--text-muted);">Created:</span>
+            <span id="propCreatedVal">--</span>
+
+            <span style="color: var(--text-muted);">Modified:</span>
+            <span id="propModifiedVal">--</span>
+
+            <span style="color: var(--text-muted);">Accessed:</span>
+            <span id="propAccessedVal">--</span>
+
+            <div style="grid-column: 1 / -1; height: 1px; background: var(--border-subtle); margin: 4px 0;"></div>
+
+            <span style="color: var(--text-muted);">Attributes:</span>
+            <div style="display: flex; gap: 14px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="propCheckReadOnly" disabled /> Read-only
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="propCheckHidden" disabled /> Hidden
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checksums Tab Content -->
+        <div id="propContentChecksums" style="display: none;">
+          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Cryptographic Hash Integrity</span>
+              <button class="tool-btn btn-primary" id="btnCalcHashes" style="padding: 4px 10px; font-size: 11px;">Calculate Hashes</button>
+            </div>
+            
+            <div>
+              <div style="font-weight: 600; font-size: 11px; margin-bottom: 2px;">SHA-256:</div>
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="propHashSha256" readonly style="flex: 1; font-family: monospace; font-size: 11px; padding: 4px 6px; background: var(--bg-app); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-main);" placeholder="Click Calculate Hashes" />
+                <button class="tool-btn icon-only" id="btnCopySha256" title="Copy SHA-256">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-weight: 600; font-size: 11px; margin-bottom: 2px;">MD5:</div>
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="propHashMd5" readonly style="flex: 1; font-family: monospace; font-size: 11px; padding: 4px 6px; background: var(--bg-app); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-main);" placeholder="Click Calculate Hashes" />
+                <button class="tool-btn icon-only" id="btnCopyMd5" title="Copy MD5">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-weight: 600; font-size: 11px; margin-bottom: 2px;">Verify Hash:</div>
+              <input type="text" id="propHashVerifyInput" style="width: 100%; font-family: monospace; font-size: 11px; padding: 4px 6px; background: var(--bg-app); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-main);" placeholder="Paste expected hash to compare..." />
+              <div id="propHashVerifyResult" style="font-size: 11px; margin-top: 4px; font-weight: 600;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 18px;">
+          <button class="modal-btn btn-secondary" id="btnPropCopyPath">Copy Path</button>
+          <button class="modal-btn btn-primary" id="btnPropDone">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch Rename (PowerRename) Modal -->
+    <div class="modal-overlay" id="batchRenameModal" style="display: none;">
+      <div class="modal-card" style="width: 520px; max-width: 90vw;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: var(--accent);"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Batch Rename (<span id="batchCountBadge">0</span> items)
+          </h3>
+          <button class="tool-btn icon-only" id="btnCloseBatchModal" style="border: none;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin: 10px 0;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Find:</label>
+              <input type="text" id="batchFindInput" class="modal-input" placeholder="e.g. IMG_" />
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Replace With:</label>
+              <input type="text" id="batchReplaceInput" class="modal-input" placeholder="e.g. Vacation_" />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Prefix:</label>
+              <input type="text" id="batchPrefixInput" class="modal-input" placeholder="Add to start" />
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Suffix:</label>
+              <input type="text" id="batchSuffixInput" class="modal-input" placeholder="Add before extension" />
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="batchCheckNumbering" style="accent-color: var(--accent);" />
+              Add Sequential Numbering
+            </label>
+            <input type="number" id="batchStartNumber" min="1" value="1" style="width: 60px; padding: 2px 6px; background: var(--bg-app); border: 1px solid var(--border-subtle); color: var(--text-main); border-radius: var(--radius-sm); font-size: 12px; display: none;" />
+          </div>
+
+          <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 4px;">Live Preview (First 5):</div>
+          <div id="batchPreviewList" style="max-height: 120px; overflow-y: auto; background: var(--bg-app); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 6px 10px; font-family: monospace; font-size: 11px; display: flex; flex-direction: column; gap: 4px;">
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 14px;">
+          <button class="modal-btn btn-secondary" id="btnBatchCancel">Cancel</button>
+          <button class="modal-btn btn-primary" id="btnBatchApply">Rename All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- macOS Finder Get Info Modal (Cmd+I / Ctrl+I) -->
+    <div class="modal-overlay" id="getInfoModal" style="display: none;">
+      <div class="get-info-card" id="getInfoCard">
+        <!-- Titlebar with macOS traffic light dot -->
+        <div class="gi-header-bar">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="gi-traffic-dot" id="btnGiClose" title="Close (Esc)"></span>
+            <span class="gi-window-title" id="giWindowTitle">Item Info</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-dim); font-family: monospace;">Get Info</span>
+        </div>
+
+        <!-- Hero block with icon, name, and subtitle -->
+        <div class="gi-hero">
+          <div class="gi-hero-icon" id="giHeroIcon"></div>
+          <div class="gi-hero-meta">
+            <div class="gi-hero-title" id="giHeroTitle">Filename</div>
+            <div class="gi-hero-sub" id="giHeroSub">Calculating...</div>
+          </div>
+        </div>
+
+        <!-- Disclosure 1: General -->
+        <details class="gi-section" open id="giSectionGeneral">
+          <summary class="gi-summary">
+            <span class="gi-chevron">▶</span>
+            <span>General:</span>
+          </summary>
+          <div class="gi-content">
+            <div class="gi-grid">
+              <span class="gi-label">Kind:</span>
+              <span class="gi-val" id="giKindVal">--</span>
+              <span class="gi-label">Size:</span>
+              <span class="gi-val" id="giSizeVal">--</span>
+              <span class="gi-label">Where:</span>
+              <span class="gi-val" id="giWhereVal" style="font-family: monospace; font-size: 11px;">--</span>
+              <span class="gi-label">Created:</span>
+              <span class="gi-val" id="giCreatedVal">--</span>
+              <span class="gi-label">Modified:</span>
+              <span class="gi-val" id="giModifiedVal">--</span>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 14px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; cursor: pointer;">
+                <input type="checkbox" id="giChkStationery" style="accent-color: var(--accent);" /> Stationery pad
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; cursor: pointer;">
+                <input type="checkbox" id="giChkLocked" style="accent-color: var(--accent);" /> Locked
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <!-- Disclosure 2: More Info -->
+        <details class="gi-section" open id="giSectionMoreInfo">
+          <summary class="gi-summary">
+            <span class="gi-chevron">▶</span>
+            <span>More Info:</span>
+          </summary>
+          <div class="gi-content">
+            <div class="gi-grid" id="giMoreInfoGrid">
+              <span class="gi-label">Dimensions:</span>
+              <span class="gi-val" id="giDimensionsVal">--</span>
+              <span class="gi-label">Contents:</span>
+              <span class="gi-val" id="giContentsVal">--</span>
+              <span class="gi-label">Last Opened:</span>
+              <span class="gi-val" id="giAccessedVal">--</span>
+            </div>
+          </div>
+        </details>
+
+        <!-- Disclosure 3: Name & Extension -->
+        <details class="gi-section" open id="giSectionNameExt">
+          <summary class="gi-summary">
+            <span class="gi-chevron">▶</span>
+            <span>Name & Extension:</span>
+          </summary>
+          <div class="gi-content">
+            <input type="text" id="giNameInput" class="modal-input" style="font-size: 12px; padding: 6px 8px; margin-bottom: 8px;" />
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; cursor: pointer;">
+              <input type="checkbox" id="giChkHideExt" style="accent-color: var(--accent);" /> Hide extension
+            </label>
+          </div>
+        </details>
+
+        <!-- Disclosure 4: Preview -->
+        <details class="gi-section" open id="giSectionPreview">
+          <summary class="gi-summary">
+            <span class="gi-chevron">▶</span>
+            <span>Preview:</span>
+          </summary>
+          <div class="gi-content" style="display: flex; justify-content: center; align-items: center; min-height: 120px; background: var(--bg-app); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); overflow: hidden;">
+            <div id="giPreviewContainer" style="width: 100%; display: flex; justify-content: center; align-items: center;"></div>
+          </div>
+        </details>
+
+        <!-- Disclosure 5: Sharing & Permissions -->
+        <details class="gi-section" open id="giSectionPerms">
+          <summary class="gi-summary">
+            <span class="gi-chevron">▶</span>
+            <span>Sharing & Permissions:</span>
+          </summary>
+          <div class="gi-content">
+            <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">You have custom access</div>
+            <table class="gi-perm-table">
+              <thead>
+                <tr><th>Name</th><th>Privilege</th></tr>
+              </thead>
+              <tbody id="giPermsTableBody">
+                <tr><td>system (admin)</td><td style="color: var(--accent);">Read & Write</td></tr>
+                <tr><td>staff</td><td>Read only</td></tr>
+                <tr><td>everyone</td><td>Read only</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- macOS Finder "Go to Folder..." Sheet (Cmd+Shift+G / Ctrl+Shift+G) -->
+    <div class="modal-overlay" id="goToFolderModal" style="display: none; align-items: flex-start; padding-top: 60px;">
+      <div class="go-folder-card" id="goToFolderCard">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">Go to the folder:</span>
+          <button class="tool-btn icon-only" id="btnGoFolderClose" style="border: none;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div style="position: relative;">
+          <input type="text" id="goFolderInput" class="modal-input" placeholder="~/Documents, ~/Downloads, or C:\Path..." spellcheck="false" autocomplete="off" style="width: 100%; font-size: 13px; padding: 8px 12px; font-family: monospace;" />
+        </div>
+
+        <!-- Quick Destination Chips -->
+        <div class="go-chips-row">
+          <button class="go-chip" data-dest="home">~ (Home)</button>
+          <button class="go-chip" data-dest="desktop">Desktop</button>
+          <button class="go-chip" data-dest="documents">Documents</button>
+          <button class="go-chip" data-dest="downloads">Downloads</button>
+          <button class="go-chip" data-dest="pictures">Pictures</button>
+          <button class="go-chip" data-dest="music">Music</button>
+          <button class="go-chip" data-dest="videos">Videos</button>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 16px;">
+          <button class="modal-btn btn-secondary" id="btnGoFolderCancel">Cancel</button>
+          <button class="modal-btn btn-primary" id="btnGoFolderConfirm">Go</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- macOS Finder "Show View Options" Panel (media_1790263700052.png) -->
+    <div class="view-options-panel" id="viewOptionsPanel" style="display: none;">
+      <!-- Titlebar with macOS traffic light close dot -->
+      <div class="vo-header">
+        <button class="vo-close-btn" id="voCloseBtn" title="Close (Esc)">
+          <span class="vo-close-dot"></span>
+        </button>
+        <span class="vo-title" id="voFolderTitle">Documents</span>
+      </div>
+
+      <div class="vo-body">
+        <!-- Section 1: Always show the folder in the view -->
+        <div class="vo-section">
+          <label class="vo-checkbox-row">
+            <input type="checkbox" id="voChkAlwaysOpen" checked />
+            <span class="vo-checkbox-custom"></span>
+            <span class="vo-label-text" id="voLblAlwaysOpen">Always open in gallery view</span>
+          </label>
+          <label class="vo-checkbox-row">
+            <input type="checkbox" id="voChkBrowse" checked />
+            <span class="vo-checkbox-custom"></span>
+            <span class="vo-label-text" id="voLblBrowse">Browse in gallery view</span>
+          </label>
+        </div>
+
+        <div class="vo-divider"></div>
+
+        <!-- Section 2: Sort By -->
+        <div class="vo-section">
+          <div class="vo-field-row">
+            <span class="vo-field-label">Sort By:</span>
+            <div class="vo-select-wrapper">
+              <select class="vo-select" id="voSortSelect">
+                <option value="mtime">Date Added</option>
+                <option value="name">Name</option>
+                <option value="mtime_mod">Date Modified</option>
+                <option value="size">Size</option>
+                <option value="kind">Kind</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="vo-divider"></div>
+
+        <!-- Section 3: Thumbnail size -->
+        <div class="vo-section">
+          <div class="vo-section-heading">Thumbnail size:</div>
+          <div class="vo-thumb-sizes-row">
+            <label class="vo-thumb-option">
+              <div class="vo-thumb-preview small">
+                <div class="vo-thumb-img-mock"></div>
+              </div>
+              <input type="radio" name="voThumbSize" value="small" />
+              <span class="vo-radio-dot"></span>
+            </label>
+            <label class="vo-thumb-option">
+              <div class="vo-thumb-preview medium">
+                <div class="vo-thumb-img-mock"></div>
+              </div>
+              <input type="radio" name="voThumbSize" value="medium" checked />
+              <span class="vo-radio-dot"></span>
+            </label>
+            <label class="vo-thumb-option">
+              <div class="vo-thumb-preview large">
+                <div class="vo-thumb-img-mock"></div>
+              </div>
+              <input type="radio" name="voThumbSize" value="large" />
+              <span class="vo-radio-dot"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="vo-divider"></div>
+
+        <!-- Section 4: Display Toggles -->
+        <div class="vo-section">
+          <label class="vo-checkbox-row">
+            <input type="checkbox" id="voChkPreviewCol" checked />
+            <span class="vo-checkbox-custom"></span>
+            <span class="vo-label-text">Show preview column</span>
+          </label>
+          <label class="vo-checkbox-row">
+            <input type="checkbox" id="voChkIconPreview" checked />
+            <span class="vo-checkbox-custom"></span>
+            <span class="vo-label-text">Show icon preview</span>
+          </label>
+          <label class="vo-checkbox-row">
+            <input type="checkbox" id="voChkFilename" checked />
+            <span class="vo-checkbox-custom"></span>
+            <span class="vo-label-text">Show filename</span>
+          </label>
+        </div>
+
+        <!-- Section 5: Bottom Use as Defaults -->
+        <div class="vo-footer">
+          <button class="vo-defaults-btn" id="voBtnDefaults">Use as Defaults</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Native File Deduplication Modal (Find Duplicates) -->
+    <div class="modal-overlay" id="dedupModal" style="display: none;">
+      <div class="dedup-card" id="dedupCard">
+        <div class="dedup-header">
+          <div class="dedup-title-area">
+            <button class="gi-traffic-dot close" id="btnDedupClose" title="Close (Esc)"></button>
+            <div class="dedup-title">Find Duplicate Files</div>
+            <div class="dedup-scope-badge" id="dedupScopeBadge">C:\</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" id="dedupChkRecursive" style="cursor: pointer;" />
+              <span>Include subfolders</span>
+            </label>
+            <button class="tool-btn" id="btnDedupRescan" style="padding: 4px 10px; font-size: 11px;">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Scan
+            </button>
+          </div>
+        </div>
+
+        <div class="dedup-stats-strip" id="dedupStatsStrip">
+          <div class="dedup-stat-badges">
+            <span class="dedup-badge dedup-badge-groups" id="dedupBadgeGroups">0 Groups</span>
+            <span class="dedup-badge dedup-badge-wasted" id="dedupBadgeWasted">0 B Reclaimable</span>
+            <span class="dedup-badge dedup-badge-scanned" id="dedupBadgeScanned">0 files scanned</span>
+          </div>
+          <div class="dedup-quick-selects">
+            <button class="dedup-quick-btn" id="btnDedupSelectNewest" title="Mark older duplicates for deletion, keeping only the newest file in each group">Keep Newest</button>
+            <button class="dedup-quick-btn" id="btnDedupSelectOldest" title="Mark newer duplicates for deletion, keeping only the oldest file in each group">Keep Oldest</button>
+            <button class="dedup-quick-btn" id="btnDedupSelectNone">Deselect All</button>
+          </div>
+        </div>
+
+        <div class="dedup-body" id="dedupBody">
+          <!-- Populated dynamically with duplicate group cards -->
+        </div>
+
+        <div class="dedup-footer">
+          <div class="dedup-footer-info" id="dedupFooterInfo">0 files selected (0 B)</div>
+          <div class="dedup-footer-actions">
+            <button class="tool-btn" id="btnDedupCancel">Done</button>
+            <button class="tool-btn danger" id="btnDedupDelete" disabled style="padding: 6px 14px; font-weight: 500;">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              Delete Selected Duplicates
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Native Storage Management Modal (Manage Storage) -->
+    <div class="modal-overlay" id="storageModal" style="display: none;">
+      <div class="storage-modal-card" id="storageModalCard">
+        <!-- Header -->
+        <div class="storage-modal-header">
+          <div class="storage-title-area">
+            <button class="gi-traffic-dot close" id="btnStorageClose" title="Close (Esc)"></button>
+            <div class="storage-modal-title">Manage Storage</div>
+            <div class="storage-drive-picker-wrap">
+              <select class="storage-drive-select" id="storageDriveSelect" title="Select storage volume">
+                <!-- Dynamically populated with drives -->
+              </select>
+            </div>
+          </div>
+          <div class="storage-header-actions">
+            <button class="tool-btn" id="btnStorageRescan" title="Rescan Drive">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span>Rescan</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Body Scrollable -->
+        <div class="storage-modal-body" id="storageModalBody">
+          <!-- Overview Hero Banner -->
+          <div class="storage-hero-summary">
+            <div class="storage-summary-left">
+              <div class="storage-drive-name" id="storageHeroDriveName">OS Disk (C:)</div>
+              <div class="storage-capacity-text">
+                <span class="storage-used-large" id="storageHeroUsed">--</span>
+                <span class="storage-total-dim" id="storageHeroTotal">of -- used</span>
+                <span class="storage-free-badge" id="storageHeroFree">-- free</span>
+              </div>
+            </div>
+            <div class="storage-summary-right">
+              <div class="storage-percent-pill" id="storageHeroPercent">0%</div>
+            </div>
+          </div>
+
+          <!-- Multi-Segment Visual Storage Bar -->
+          <div class="storage-bar-wrapper">
+            <div class="storage-bar" id="storageBar">
+              <!-- Dynamically rendered segments -->
+            </div>
+          </div>
+
+          <!-- Category Legend Grid -->
+          <div class="storage-legend-grid" id="storageLegendGrid">
+            <!-- Dynamically rendered legend pills -->
+          </div>
+
+          <!-- Quick Maintenance Action Cards -->
+          <div class="storage-section-title">Clean & Recommendations</div>
+          <div class="storage-clean-grid">
+            <!-- Temp Files Card -->
+            <div class="storage-card" id="cardStorageTemp">
+              <div class="storage-card-header">
+                <div class="storage-card-icon-wrap temp-icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                </div>
+                <div class="storage-card-meta">
+                  <div class="storage-card-title">Temporary & Cache Files</div>
+                  <div class="storage-card-size" id="storageTempSize">Calculating...</div>
+                </div>
+              </div>
+              <div class="storage-card-desc">Safely remove temporary application cache files and logs older than 24 hours.</div>
+              <div class="storage-card-actions">
+                <button class="tool-btn" id="btnStorageCleanTemp">Clean Cache</button>
+              </div>
+            </div>
+
+            <!-- Recycle Bin Card -->
+            <div class="storage-card" id="cardStorageRecycle">
+              <div class="storage-card-header">
+                <div class="storage-card-icon-wrap recycle-icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </div>
+                <div class="storage-card-meta">
+                  <div class="storage-card-title">Recycle Bin</div>
+                  <div class="storage-card-size" id="storageRecycleSize">Calculating...</div>
+                </div>
+              </div>
+              <div class="storage-card-desc">Permanently empty deleted items waiting in the Windows Recycle Bin.</div>
+              <div class="storage-card-actions">
+                <button class="tool-btn danger" id="btnStorageEmptyRecycle">Empty Bin</button>
+              </div>
+            </div>
+
+            <!-- Deduplication Card -->
+            <div class="storage-card" id="cardStorageDedup">
+              <div class="storage-card-header">
+                <div class="storage-card-icon-wrap dedup-icon">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </div>
+                <div class="storage-card-meta">
+                  <div class="storage-card-title">Duplicate Files</div>
+                  <div class="storage-card-size" id="storageDedupSubtitle">2-Phase SHA-256 Engine</div>
+                </div>
+              </div>
+              <div class="storage-card-desc">Scan for exact duplicate copies across documents, photos, and video archives.</div>
+              <div class="storage-card-actions">
+                <button class="tool-btn" id="btnStorageLaunchDedup">Find Duplicates</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Breakdown Tables & Explorer Views -->
+          <div class="storage-breakdown-section">
+            <div class="storage-tabs-bar">
+              <div class="storage-tab-buttons">
+                <button class="storage-tab-btn active" id="tabBtnLargestFiles" data-tab="largest">Largest Files</button>
+                <button class="storage-tab-btn" id="tabBtnTopFolders" data-tab="folders">Top Folders</button>
+              </div>
+              <div class="storage-tab-info" id="storageTabSummaryInfo">Top storage consumers</div>
+            </div>
+
+            <!-- View: Largest Files -->
+            <div class="storage-tab-content active" id="tabContentLargestFiles">
+              <div class="storage-table-container">
+                <table class="storage-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 44%;">Name & Location</th>
+                      <th style="width: 14%;">Category</th>
+                      <th style="width: 14%; text-align: right;">Size</th>
+                      <th style="width: 16%;">Modified</th>
+                      <th style="width: 12%; text-align: center;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="storageLargestFilesTbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- View: Top Folders -->
+            <div class="storage-tab-content" id="tabContentTopFolders" style="display: none;">
+              <div class="storage-folders-list" id="storageTopFoldersList">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Storage Modal Footer -->
+        <div class="storage-modal-footer">
+          <div class="storage-footer-note" id="storageFooterNote">Scanned in 0ms · Zero-dependency native filesystem engine</div>
+          <button class="tool-btn accent" id="btnStorageDone">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Hub Modal (Windows Options & External Apps) -->
+    <div class="modal-overlay" id="shareModal" style="display: none;">
+      <div class="share-modal-card" id="shareModalCard">
+        <!-- Modal Header -->
+        <div class="share-modal-header">
+          <div class="share-modal-title-row">
+            <svg class="icon share-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <div class="share-modal-title">Share</div>
+          </div>
+          <button class="tool-btn icon-only" id="btnCloseShareModal" title="Close (Esc)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Target File Capsule Preview -->
+        <div class="share-target-card" id="shareTargetCard">
+          <div class="share-target-icon" id="shareTargetIcon">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="share-target-meta">
+            <div class="share-target-name" id="shareTargetName">Selected File</div>
+            <div class="share-target-path" id="shareTargetPath">C:\...</div>
+          </div>
+          <button class="tool-btn share-copy-btn" id="btnShareCopyPath" title="Copy Path to Clipboard (Ctrl+Shift+C)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy Path</span>
+          </button>
+        </div>
+
+        <!-- Tab Selector: Windows Native vs Share Apps -->
+        <div class="share-tabs-nav">
+          <button class="share-tab-btn active" id="tabBtnShareNative" data-share-tab="native">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Windows Native Options</span>
+          </button>
+          <button class="share-tab-btn" id="tabBtnShareApps" data-share-tab="apps">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span>Windows Share Apps</span>
+          </button>
+        </div>
+
+        <!-- Body Content -->
+        <div class="share-modal-body">
+          <!-- View 1: Windows Native Options -->
+          <div class="share-view" id="shareViewNative">
+            <div class="share-grid">
+              <!-- Windows Native Share Sheet -->
+              <div class="share-tile" id="shareOptWinSheet" title="Launch Windows 10/11 Share UI">
+                <div class="share-tile-icon-box accent">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                </div>
+                <div class="share-tile-meta">
+                  <div class="share-tile-title">Windows Share Sheet</div>
+                  <div class="share-tile-desc">Native Windows 10/11 Contacts, Nearby & Installed Apps</div>
+                </div>
+              </div>
+
+              <!-- Nearby Sharing -->
+              <div class="share-tile" id="shareOptNearby" title="Windows Nearby Sharing settings">
+                <div class="share-tile-icon-box blue">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4m-8.4 0a6 6 0 0 1 0-8.4"/><circle cx="12" cy="12" r="2"/></svg>
+                </div>
+                <div class="share-tile-meta">
+                  <div class="share-tile-title">Nearby Sharing</div>
+                  <div class="share-tile-desc">Wi-Fi & Bluetooth direct transfer to nearby PCs</div>
+                </div>
+              </div>
+
+              <!-- Email / Mailto -->
+              <div class="share-tile" id="shareOptEmail" title="Compose Email in default mail client">
+                <div class="share-tile-icon-box green">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="share-tile-meta">
+                  <div class="share-tile-title">Email / Outlook</div>
+                  <div class="share-tile-desc">Attach to new draft in default Windows mail client</div>
+                </div>
+              </div>
+
+              <!-- Copy UNC Network Link -->
+              <div class="share-tile" id="shareOptUnc" title="Copy local network UNC path (\\PC\share\file)">
+                <div class="share-tile-icon-box purple">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                </div>
+                <div class="share-tile-meta">
+                  <div class="share-tile-title">Copy Network UNC Path</div>
+                  <div class="share-tile-desc">Format path as \\HOST\Share for LAN colleagues</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mobile Wi-Fi QR Code & Link Transfer Section -->
+            <div class="share-wifi-card">
+              <div class="share-wifi-header">
+                <div class="share-wifi-title-group">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                  <div>
+                    <div class="share-wifi-title">Local Wi-Fi Mobile Download</div>
+                    <div class="share-wifi-sub">Scan QR code with your phone (iOS / Android) on the same Wi-Fi</div>
+                  </div>
+                </div>
+                <button class="tool-btn" id="btnShareCopyWifiLink">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  <span>Copy Wi-Fi Link</span>
+                </button>
+              </div>
+              <div class="share-wifi-body">
+                <div class="share-qr-container" id="shareQrContainer">
+                  <!-- QR Code Canvas or SVG rendered here -->
+                </div>
+                <div class="share-wifi-link-box">
+                  <div class="share-wifi-link-label">Direct Download URL:</div>
+                  <div class="share-wifi-url-display" id="shareWifiUrlDisplay">http://...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 2: Windows Share Apps Directory -->
+          <div class="share-view" id="shareViewApps" style="display: none;">
+            <div class="share-apps-header">
+              <div class="share-apps-search">
+                <svg class="icon search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="shareAppsSearchInput" class="share-apps-input" placeholder="Filter share apps..." autocomplete="off">
+              </div>
+              <button class="tool-btn" id="btnRefreshShareApps" title="Rescan installed Windows apps">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                <span>Rescan</span>
+              </button>
+            </div>
+            <div class="share-apps-grid" id="shareAppsGrid">
+              <!-- LocalSend -->
+              <div class="share-app-card" data-app="localsend">
+                <div class="share-app-icon" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">LocalSend</div>
+                  <div class="share-app-desc">Open-source cross-platform Wi-Fi file transfer</div>
+                </div>
+                <button class="share-app-action">Launch / Web</button>
+              </div>
+
+              <!-- Quick Share (Google) -->
+              <div class="share-app-card" data-app="quickshare">
+                <div class="share-app-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m8 12 4-4 4 4"/><path d="m8 16 4-4 4 4"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Quick Share (Google)</div>
+                  <div class="share-app-desc">Fast wireless direct transfer between Windows & Android</div>
+                </div>
+                <button class="share-app-action">Launch / Open</button>
+              </div>
+
+              <!-- Microsoft Phone Link -->
+              <div class="share-app-card" data-app="phonelink">
+                <div class="share-app-icon" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Phone Link (Windows)</div>
+                  <div class="share-app-desc">Direct wireless photo & file transfer with Android & iOS</div>
+                </div>
+                <button class="share-app-action">Launch App</button>
+              </div>
+
+              <!-- Bluetooth File Transfer -->
+              <div class="share-app-card" data-app="bluetooth">
+                <div class="share-app-icon" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Bluetooth File Transfer</div>
+                  <div class="share-app-desc">Native Windows offline transfer to paired devices</div>
+                </div>
+                <button class="share-app-action">Send via Bluetooth</button>
+              </div>
+
+              <!-- Send Anywhere -->
+              <div class="share-app-card" data-app="sendanywhere">
+                <div class="share-app-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Send Anywhere</div>
+                  <div class="share-app-desc">Transfer with a 6-digit key or 48-hour secure share link</div>
+                </div>
+                <button class="share-app-action">Open Web/App</button>
+              </div>
+
+              <!-- ToffeeShare -->
+              <div class="share-app-card" data-app="toffeeshare">
+                <div class="share-app-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">ToffeeShare</div>
+                  <div class="share-app-desc">P2P encrypted file streaming without size limits</div>
+                </div>
+                <button class="share-app-action">Open Stream</button>
+              </div>
+
+              <!-- Wormhole -->
+              <div class="share-app-card" data-app="wormhole">
+                <div class="share-app-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Wormhole</div>
+                  <div class="share-app-desc">End-to-end encrypted fast transfer up to 10 GB with auto-destruct</div>
+                </div>
+                <button class="share-app-action">Upload & Share</button>
+              </div>
+
+              <!-- WeTransfer -->
+              <div class="share-app-card" data-app="wetransfer">
+                <div class="share-app-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">WeTransfer</div>
+                  <div class="share-app-desc">Standard web-based link generation and delivery</div>
+                </div>
+                <button class="share-app-action">Open WeTransfer</button>
+              </div>
+
+              <!-- WhatsApp Desktop -->
+              <div class="share-app-card" data-app="whatsapp">
+                <div class="share-app-icon" style="background: rgba(37, 211, 102, 0.15); color: #25d366;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">WhatsApp Desktop</div>
+                  <div class="share-app-desc">Send to WhatsApp chat or contact</div>
+                </div>
+                <button class="share-app-action">Open WhatsApp</button>
+              </div>
+
+              <!-- Telegram Desktop -->
+              <div class="share-app-card" data-app="telegram">
+                <div class="share-app-icon" style="background: rgba(41, 169, 234, 0.15); color: #29a9ea;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Telegram Desktop</div>
+                  <div class="share-app-desc">Send up to 2 GB per file via Telegram cloud</div>
+                </div>
+                <button class="share-app-action">Open Telegram</button>
+              </div>
+
+              <!-- Cloud Storage (OneDrive / Google Drive) -->
+              <div class="share-app-card" data-app="cloud">
+                <div class="share-app-icon" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                </div>
+                <div class="share-app-info">
+                  <div class="share-app-name">Cloud Sync Storage</div>
+                  <div class="share-app-desc">OneDrive, Google Drive, Dropbox link sharing portal</div>
+                </div>
+                <button class="share-app-action">Open Cloud</button>
+              </div>
+            </div>
+            <div id="shareAppsNoMatch" style="display: none; padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px;">
+              No matching share tools found.
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="share-modal-footer">
+          <div class="share-footer-note">All transfers use native system protocols or direct encrypted streams</div>
+          <button class="tool-btn btn-primary" id="btnShareDone">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+  </div>
+
+  <script src="vendor/pdfjs/pdf.min.js"></script>
+  <script src="virtual-scroll.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
