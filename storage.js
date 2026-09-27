@@ -576,7 +576,19 @@ function launchWindowsTool(toolName, driveLetter = '') {
       'sysdm': 'sysdm.cpl',
       'appwiz': 'appwiz.cpl',
       'services': 'services.msc',
-      'storagesettings': 'start ms-settings:storagesense'
+      'eventvwr': 'eventvwr.msc',
+      'compmgmt': 'compmgmt.msc',
+      'fsmgmt': 'fsmgmt.msc',
+      'perfmon': 'perfmon.exe',
+      'storagespaces': 'control.exe /name Microsoft.StorageSpaces',
+      'filehistory': 'control.exe /name Microsoft.FileHistory',
+      'storagesettings': 'start ms-settings:storagesense',
+      'backup': 'start ms-settings:backup',
+      'chkdsk': `cmd.exe /k "chkdsk.exe ${drive}:"`,
+      'format': `cmd.exe /k "format.com ${drive}: /q"`,
+      'diskpart': 'cmd.exe /k diskpart.exe',
+      'powershell': 'powershell.exe',
+      'cmd': 'cmd.exe'
     };
 
     const cmd = toolCommands[toolName.toLowerCase()];

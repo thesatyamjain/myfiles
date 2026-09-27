@@ -6663,6 +6663,22 @@ details[open] > .gi-summary .gi-chevron {
   background: rgba(236, 72, 153, 0.14);
   color: #ec4899;
 }
+.storage-card-icon-wrap.win-spaces {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0ea5e9;
+}
+.storage-card-icon-wrap.win-backup {
+  background: rgba(139, 92, 246, 0.14);
+  color: #8b5cf6;
+}
+.storage-card-icon-wrap.win-shares {
+  background: rgba(20, 184, 166, 0.14);
+  color: #14b8a6;
+}
+.storage-card-icon-wrap.win-chkdsk {
+  background: rgba(234, 88, 12, 0.14);
+  color: #ea580c;
+}
 
 .storage-card-icon-wrap svg {
   width: 18px;

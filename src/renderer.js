@@ -886,6 +886,8 @@
     ctxBatchRename: document.getElementById('ctxBatchRename'),
     ctxProperties: document.getElementById('ctxProperties'),
     ctxTerminal: document.getElementById('ctxTerminal'),
+    ctxPowerShell: document.getElementById('ctxPowerShell'),
+    ctxCmd: document.getElementById('ctxCmd'),
     ctxReveal: document.getElementById('ctxReveal'),
     ctxArchiveDivider: document.getElementById('ctxArchiveDivider'),
     ctxExtractAll: document.getElementById('ctxExtractAll'),
@@ -5055,6 +5057,11 @@
       btn.textContent = drive.letter + ':';
       btn.title = `Switch to ${drive.label}`;
       btn.addEventListener('click', () => loadSecondaryPane(drive.path));
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showDriveContextMenu(e.clientX, e.clientY, drive);
+      });
       el.secondaryPaneDrives.appendChild(btn);
     });
   }
@@ -5158,7 +5165,28 @@
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         <span>Open in New Tab</span>
       </div>
+      <div class="context-item" id="driveCtxManage">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span>Manage Storage</span>
+      </div>
+      <div class="context-item" id="driveCtxChkdsk">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Check File System (Chkdsk)</span>
+      </div>
+      <div class="context-item" id="driveCtxCleanup">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        <span>Disk Cleanup</span>
+      </div>
+      <div class="context-item" id="driveCtxOptimize">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>
+        <span>Defrag & Optimize</span>
+      </div>
+      <div class="context-item" id="driveCtxFormat">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/></svg>
+        <span>Format Volume...</span>
+      </div>
       ${isEjectable ? `
+        <div class="context-divider"></div>
         <div class="context-item" id="driveCtxEject">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 4 4 14 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
           <span>Eject (${drive.letter}:)</span>
@@ -5186,6 +5214,59 @@
       openItem.addEventListener('click', () => {
         menu.remove();
         createTab(drive.path);
+      });
+    }
+
+    const manageItem = menu.querySelector('#driveCtxManage');
+    if (manageItem) {
+      manageItem.addEventListener('click', () => {
+        menu.remove();
+        openStorageModal(drive.path);
+      });
+    }
+
+    const chkdskItem = menu.querySelector('#driveCtxChkdsk');
+    if (chkdskItem) {
+      chkdskItem.addEventListener('click', async () => {
+        menu.remove();
+        showToast(`Running filesystem integrity check on (${drive.letter}:)...`, 'info');
+        await api.launchWindowsTool('chkdsk', drive.letter);
+      });
+    }
+
+    const cleanupItem = menu.querySelector('#driveCtxCleanup');
+    if (cleanupItem) {
+      cleanupItem.addEventListener('click', async () => {
+        menu.remove();
+        showToast(`Opening Disk Cleanup for (${drive.letter}:)...`, 'info');
+        await api.launchWindowsTool('cleanmgr', drive.letter);
+      });
+    }
+
+    const optimizeItem = menu.querySelector('#driveCtxOptimize');
+    if (optimizeItem) {
+      optimizeItem.addEventListener('click', async () => {
+        menu.remove();
+        showToast('Opening Windows Drive Optimization & TRIM utility...', 'info');
+        await api.launchWindowsTool('dfrgui', drive.letter);
+      });
+    }
+
+    const formatItem = menu.querySelector('#driveCtxFormat');
+    if (formatItem) {
+      formatItem.addEventListener('click', async () => {
+        menu.remove();
+        if (drive.letter === 'C') {
+          showToast('Cannot format Windows OS system drive', 'warning');
+          return;
+        }
+        showConfirmModal(
+          `Format Drive (${drive.letter}:)?`,
+          `Formatting will erase ALL data on volume "${drive.label}" (${drive.letter}:). You can launch Windows Disk Management to perform a secure format.`,
+          async () => {
+            await api.launchWindowsTool('diskmgmt', drive.letter);
+          }
+        );
       });
     }
 
@@ -5985,6 +6066,8 @@
 
     // 13. System Integration
     if (el.ctxTerminal) el.ctxTerminal.style.display = (!hasTarget || isDir) ? 'flex' : 'none';
+    if (el.ctxPowerShell) el.ctxPowerShell.style.display = (!hasTarget || isDir) ? 'flex' : 'none';
+    if (el.ctxCmd) el.ctxCmd.style.display = (!hasTarget || isDir) ? 'flex' : 'none';
     if (el.ctxReveal) el.ctxReveal.style.display = 'none';
 
     // 14. Maintenance & Storage Tools (Empty background or folder target)
@@ -7126,12 +7209,22 @@
     el.propFileKind.textContent = kindStr;
 
     // General fields
-    el.propTypeVal.textContent = item.isDirectory ? 'File folder' : `${kindStr} (${ext || 'no extension'})`;
-    el.propOpensWithVal.textContent = state.vlcInstalled && isMediaFile(item) ? 'VLC media player' : 'Windows default application';
+    const isDrive = item.isDrive || /^[a-zA-Z]:[/\\]?$/.test(item.path);
+    const driveObj = isDrive ? (state.drives || []).find(d => d.letter && d.letter.toUpperCase() === item.path.charAt(0).toUpperCase()) : null;
+
+    if (driveObj) {
+      el.propTypeVal.textContent = `Local Disk Volume (${driveObj.letter}:)`;
+      el.propOpensWithVal.textContent = 'Windows Shell / Explorer';
+      el.propSizeVal.textContent = `${formatBytes(driveObj.totalBytes)} (${(driveObj.totalBytes || 0).toLocaleString()} bytes)`;
+      el.propSizeOnDiskVal.textContent = `Used: ${formatBytes(driveObj.usedBytes)} | Free: ${formatBytes(driveObj.freeBytes)}`;
+    } else {
+      el.propTypeVal.textContent = item.isDirectory ? 'File folder' : `${kindStr} (${ext || 'no extension'})`;
+      el.propOpensWithVal.textContent = state.vlcInstalled && isMediaFile(item) ? 'VLC media player' : 'Windows default application';
+      const sizeStr = item.isDirectory ? 'Calculating...' : `${formatBytes(item.size)} (${(item.size || 0).toLocaleString()} bytes)`;
+      el.propSizeVal.textContent = sizeStr;
+      el.propSizeOnDiskVal.textContent = item.isDirectory ? '--' : `${formatBytes(Math.ceil((item.size || 0) / 4096) * 4096)}`;
+    }
     el.propLocationVal.textContent = item.path;
-    const sizeStr = item.isDirectory ? 'Calculating...' : `${formatBytes(item.size)} (${(item.size || 0).toLocaleString()} bytes)`;
-    el.propSizeVal.textContent = sizeStr;
-    el.propSizeOnDiskVal.textContent = item.isDirectory ? '--' : `${formatBytes(Math.ceil((item.size || 0) / 4096) * 4096)}`;
     el.propCreatedVal.textContent = formatDateFull(item.birthtime || item.mtime);
     el.propModifiedVal.textContent = formatDateFull(item.mtime);
     el.propAccessedVal.textContent = formatDateFull(item.atime || item.mtime);
@@ -7146,7 +7239,7 @@
 
     el.propertiesModal.style.display = 'flex';
 
-    if (item.isDirectory && api.getFileDetails) {
+    if (item.isDirectory && !isDrive && api.getFileDetails) {
       const details = await api.getFileDetails(item.path);
       if (details.success && details.fileCount !== undefined) {
         el.propSizeVal.textContent = `${details.fileCount} items inside`;
@@ -10163,6 +10256,20 @@
       const targetDir = (state.contextTarget && state.contextTarget.isDirectory) ? state.contextTarget.path : state.currentPath;
       api.openTerminal(targetDir, state.terminalChoice);
     });
+    if (el.ctxPowerShell) {
+      el.ctxPowerShell.addEventListener('click', () => {
+        hideContextMenu();
+        const targetDir = (state.contextTarget && state.contextTarget.isDirectory) ? state.contextTarget.path : state.currentPath;
+        api.openTerminal(targetDir, 'powershell');
+      });
+    }
+    if (el.ctxCmd) {
+      el.ctxCmd.addEventListener('click', () => {
+        hideContextMenu();
+        const targetDir = (state.contextTarget && state.contextTarget.isDirectory) ? state.contextTarget.path : state.currentPath;
+        api.openTerminal(targetDir, 'cmd');
+      });
+    }
     if (el.ctxReveal) {
       el.ctxReveal.addEventListener('click', () => {
         hideContextMenu();

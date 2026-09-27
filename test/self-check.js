@@ -1641,6 +1641,15 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(updatedIndex.includes('data-tool="diskmgmt"'), 'index.html must provide Disk Management launcher');
   assert(updatedIndex.includes('data-tool="dfrgui"'), 'index.html must provide Defrag/TRIM launcher');
   assert(updatedIndex.includes('data-tool="resmon"'), 'index.html must provide Resource Monitor launcher');
+  assert(updatedIndex.includes('data-tool="chkdsk"'), 'index.html must provide Check Disk launcher');
+  assert(updatedIndex.includes('data-tool="storagespaces"'), 'index.html must provide Storage Spaces launcher');
+  assert(updatedIndex.includes('data-tool="fsmgmt"'), 'index.html must provide Shared Folders launcher');
+  assert(updatedIndex.includes('data-tool="filehistory"'), 'index.html must provide File History launcher');
+  assert(updatedIndex.includes('id="ctxPowerShell"'), 'index.html must include ctxPowerShell');
+  assert(updatedIndex.includes('id="ctxCmd"'), 'index.html must include ctxCmd');
+  assert(updatedRenderer.includes('driveCtxChkdsk'), 'renderer.js must include driveCtxChkdsk');
+  assert(updatedRenderer.includes('el.ctxPowerShell'), 'renderer.js must wire el.ctxPowerShell');
+  assert(updatedRenderer.includes('el.ctxCmd'), 'renderer.js must wire el.ctxCmd');
   assert(updatedStyles.includes('.storage-tools-grid'), 'styles.css must style .storage-tools-grid layout');
 
   console.log('✓ Windows Native Storage & Administrative Tools Integration verified');
