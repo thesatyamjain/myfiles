@@ -4006,20 +4006,36 @@
     if (isImageFile(item)) {
       if (el.qlImageTools) el.qlImageTools.style.display = 'flex';
       state.quickLookZoom = 1.0;
+      state.quickLookPanX = 0;
+      state.quickLookPanY = 0;
       state.quickLookRotation = (state.activeItemRotation || 0);
 
       const mediaUrl = getMediaUrl(item.path);
 
       el.qlBody.innerHTML = `
         <div class="ql-image-wrap" id="qlImageWrap" title="Click to zoom / Drag to pan">
-          <img id="qlPreviewImg" src="${mediaUrl}" alt="${escapeHtml(item.name)}" draggable="false" style="transform: rotate(${state.quickLookRotation}deg) scale(${state.quickLookZoom});" />
+          <img id="qlPreviewImg" src="${mediaUrl}" alt="${escapeHtml(item.name)}" draggable="false" style="transform: translate(0px, 0px) rotate(${state.quickLookRotation}deg) scale(${state.quickLookZoom});" />
         </div>
       `;
 
       const img = el.qlBody.querySelector('#qlPreviewImg');
       const wrap = el.qlBody.querySelector('#qlImageWrap');
 
-      function updateImageTransform() {
+      function clampPan(px, py, zoom) {
+        if (!wrap || !img || zoom <= 1.0) return { x: 0, y: 0 };
+        const wrapW = wrap.clientWidth || 600;
+        const wrapH = wrap.clientHeight || 400;
+        const imgW = (img.offsetWidth || img.clientWidth || wrapW) * zoom;
+        const imgH = (img.offsetHeight || img.clientHeight || wrapH) * zoom;
+        const maxPanX = Math.max(0, (imgW - wrapW) / 2 + 100);
+        const maxPanY = Math.max(0, (imgH - wrapH) / 2 + 100);
+        return {
+          x: Math.min(maxPanX, Math.max(-maxPanX, px)),
+          y: Math.min(maxPanY, Math.max(-maxPanY, py))
+        };
+      }
+
+      function updateImageTransform(withTransition = true) {
         if (!img) return;
         const rot = state.quickLookRotation % 360;
         const zoom = state.quickLookZoom;
@@ -4031,7 +4047,6 @@
           const imgW = img.offsetWidth || img.clientWidth;
           const imgH = img.offsetHeight || img.clientHeight;
           if (wrapW > 0 && wrapH > 0 && imgW > 0 && imgH > 0) {
-            // When rotated 90 or 270 deg, visual width is imgH and visual height is imgW
             const fitScale = Math.min(wrapW / imgH, wrapH / imgW);
             if (fitScale < 1.0) {
               containmentScale = fitScale;
@@ -4041,7 +4056,18 @@
 
         const flipScale = state.quickLookFlipH ? -1 : 1;
         const effectiveScale = +(zoom * containmentScale).toFixed(3);
-        img.style.transform = `rotate(${rot}deg) scale(${effectiveScale}) scaleX(${flipScale})`;
+
+        if (zoom <= 1.0) {
+          state.quickLookPanX = 0;
+          state.quickLookPanY = 0;
+        } else {
+          const clamped = clampPan(state.quickLookPanX || 0, state.quickLookPanY || 0, effectiveScale);
+          state.quickLookPanX = clamped.x;
+          state.quickLookPanY = clamped.y;
+        }
+
+        img.style.transition = withTransition ? 'transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease' : 'none';
+        img.style.transform = `translate(${state.quickLookPanX}px, ${state.quickLookPanY}px) rotate(${rot}deg) scale(${effectiveScale}) scaleX(${flipScale})`;
 
         if (el.qlZoomLabel) {
           el.qlZoomLabel.textContent = zoom === 1.0 ? 'Fit' : `${Math.round(zoom * 100)}%`;
@@ -4055,7 +4081,7 @@
         if (wrap) {
           const isZoomed = zoom > 1.0;
           wrap.classList.toggle('is-zoomed', isZoomed);
-          wrap.title = isZoomed ? 'Drag to pan / Click to fit' : 'Click to zoom in (or use +/-)';
+          wrap.title = isZoomed ? 'Drag to pan / Double-click to fit' : 'Click to zoom in (or scroll / +/-)';
         }
       }
 
@@ -4063,7 +4089,7 @@
         img.onload = () => {
           if (state.quickLookFile && state.quickLookFile.path === item.path) {
             el.qlSubtitle.textContent = `${img.naturalWidth} × ${img.naturalHeight} · ${formatBytes(item.size)} · Modified ${formatDate(item.mtime)}`;
-            updateImageTransform();
+            updateImageTransform(false);
           }
         };
         img.onerror = () => {
@@ -4092,7 +4118,7 @@
         el.qlBtnRotate.onclick = () => {
           state.quickLookRotation = (state.quickLookRotation + 90) % 360;
           state.activeItemRotation = state.quickLookRotation;
-          updateImageTransform();
+          updateImageTransform(true);
           const ppHeroThumb = document.getElementById('ppHeroThumb');
           if (ppHeroThumb) ppHeroThumb.style.transform = `rotate(${state.activeItemRotation}deg)`;
         };
@@ -4101,28 +4127,30 @@
       if (el.qlBtnFlipH) {
         el.qlBtnFlipH.onclick = () => {
           state.quickLookFlipH = !state.quickLookFlipH;
-          updateImageTransform();
+          updateImageTransform(true);
         };
       }
 
       if (el.qlBtnZoomIn) {
         el.qlBtnZoomIn.onclick = () => {
           state.quickLookZoom = Math.min(4.0, +(state.quickLookZoom + 0.25).toFixed(2));
-          updateImageTransform();
+          updateImageTransform(true);
         };
       }
 
       if (el.qlBtnZoomOut) {
         el.qlBtnZoomOut.onclick = () => {
           state.quickLookZoom = Math.max(1.0, +(state.quickLookZoom - 0.25).toFixed(2));
-          updateImageTransform();
+          updateImageTransform(true);
         };
       }
 
       if (el.qlBtnZoomFit) {
         el.qlBtnZoomFit.onclick = () => {
           state.quickLookZoom = state.quickLookZoom > 1.0 ? 1.0 : 2.0;
-          updateImageTransform();
+          state.quickLookPanX = 0;
+          state.quickLookPanY = 0;
+          updateImageTransform(true);
         };
       }
 
@@ -4131,8 +4159,8 @@
         let isDragging = false;
         let dragStartX = 0;
         let dragStartY = 0;
-        let scrollStartX = 0;
-        let scrollStartY = 0;
+        let startPanX = 0;
+        let startPanY = 0;
         let totalMoved = 0;
 
         wrap.addEventListener('mousedown', (e) => {
@@ -4141,8 +4169,8 @@
           totalMoved = 0;
           dragStartX = e.clientX;
           dragStartY = e.clientY;
-          scrollStartX = wrap.scrollLeft;
-          scrollStartY = wrap.scrollTop;
+          startPanX = state.quickLookPanX || 0;
+          startPanY = state.quickLookPanY || 0;
           if (state.quickLookZoom > 1.0) {
             wrap.classList.add('panning');
           }
@@ -4154,8 +4182,9 @@
           const dy = e.clientY - dragStartY;
           totalMoved += Math.abs(dx) + Math.abs(dy);
           if (state.quickLookZoom > 1.0) {
-            wrap.scrollLeft = scrollStartX - dx;
-            wrap.scrollTop = scrollStartY - dy;
+            state.quickLookPanX = startPanX + dx;
+            state.quickLookPanY = startPanY + dy;
+            updateImageTransform(false);
           }
         });
 
@@ -4163,26 +4192,42 @@
           if (isDragging) {
             isDragging = false;
             wrap.classList.remove('panning');
+            if (state.quickLookZoom > 1.0) {
+              updateImageTransform(true);
+            }
           }
         });
 
         wrap.addEventListener('click', (e) => {
-          // If the user was dragging to pan, don't toggle zoom on release
+          // If user dragged to pan, don't trigger zoom toggle
           if (totalMoved > 6) return;
           if (state.quickLookZoom === 1.0) {
             state.quickLookZoom = 2.0;
+            // Center zoom around click position relative to center of wrap
+            const rect = wrap.getBoundingClientRect();
+            const clickCenterX = e.clientX - (rect.left + rect.width / 2);
+            const clickCenterY = e.clientY - (rect.top + rect.height / 2);
+            state.quickLookPanX = -clickCenterX * 0.8;
+            state.quickLookPanY = -clickCenterY * 0.8;
           } else {
             state.quickLookZoom = 1.0;
+            state.quickLookPanX = 0;
+            state.quickLookPanY = 0;
           }
-          updateImageTransform();
+          updateImageTransform(true);
         });
 
         wrap.addEventListener('wheel', (e) => {
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            const delta = e.deltaY < 0 ? 0.25 : -0.25;
-            state.quickLookZoom = Math.min(4.0, Math.max(1.0, +(state.quickLookZoom + delta).toFixed(2)));
-            updateImageTransform();
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.25 : -0.25;
+          const newZoom = Math.min(4.0, Math.max(1.0, +(state.quickLookZoom + delta).toFixed(2)));
+          if (newZoom !== state.quickLookZoom) {
+            state.quickLookZoom = newZoom;
+            if (state.quickLookZoom === 1.0) {
+              state.quickLookPanX = 0;
+              state.quickLookPanY = 0;
+            }
+            updateImageTransform(true);
           }
         }, { passive: false });
       }
@@ -4429,6 +4474,8 @@
     state.quickLookOpen = false;
     state.quickLookFile = null;
     state.quickLookZoom = 1.0;
+    state.quickLookPanX = 0;
+    state.quickLookPanY = 0;
     state.quickLookFlipH = false;
     if (el.qlImageTools) el.qlImageTools.style.display = 'none';
     if (el.qlInfoHud) el.qlInfoHud.style.display = 'none';

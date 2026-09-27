@@ -2848,7 +2848,7 @@ body.theme-light .list-header {
   overflow: auto;
   position: relative;
   cursor: zoom-in;
-  padding: 16px;
+  padding: 24px;
   box-sizing: border-box;
 }
 .ql-image-wrap img {
@@ -2857,9 +2857,11 @@ body.theme-light .list-header {
   object-fit: contain;
   border-radius: var(--radius-md);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   transform-origin: center center;
   margin: auto;
+  flex-shrink: 0;
+  pointer-events: auto;
 }
 .ql-image-wrap.panning {
   cursor: grabbing !important;
