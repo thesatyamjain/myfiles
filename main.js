@@ -627,6 +627,15 @@ ipcMain.handle('restore-default', async () => {
   });
 });
 
+// IPC: Launch Native Windows Tool
+ipcMain.handle('launch-windows-tool', async (_event, toolName, driveLetter) => {
+  try {
+    return await storage.launchWindowsTool(toolName, driveLetter);
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 // IPC: High-Speed Asynchronous Recursive Search
 ipcMain.handle('search-files', async (event, { searchId, rootDir, query, searchContent = false, maxResults = 200 }) => {
   activeSearches.set(searchId, true);

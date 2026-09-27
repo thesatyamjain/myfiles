@@ -1630,6 +1630,21 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
 
   console.log('✓ Production Hardening (Body Cap, Path Traversal, Range/206, Error Handler, CSP, Cache, Graceful Shutdown) verified');
 
+  // Windows Native Storage & Administrative Tools Integration Suite
+  assert(typeof storage.launchWindowsTool === 'function', 'storage.js must export launchWindowsTool function');
+  assert(mainSrc.includes("'launch-windows-tool'"), 'main.js must register launch-windows-tool IPC handler');
+  assert(preloadSrc.includes('launchWindowsTool:'), 'preload.js must expose launchWindowsTool to window.myFilesAPI');
+  assert(serverSrc.includes('/api/launch-windows-tool'), 'server.js must define /api/launch-windows-tool endpoint');
+  assert(updatedRenderer.includes('btn-launch-win-tool'), 'renderer.js must wire .btn-launch-win-tool buttons');
+  assert(updatedIndex.includes('storage-tools-grid'), 'index.html must include storage-tools-grid container');
+  assert(updatedIndex.includes('data-tool="cleanmgr"'), 'index.html must provide Disk Cleanup launcher');
+  assert(updatedIndex.includes('data-tool="diskmgmt"'), 'index.html must provide Disk Management launcher');
+  assert(updatedIndex.includes('data-tool="dfrgui"'), 'index.html must provide Defrag/TRIM launcher');
+  assert(updatedIndex.includes('data-tool="resmon"'), 'index.html must provide Resource Monitor launcher');
+  assert(updatedStyles.includes('.storage-tools-grid'), 'styles.css must style .storage-tools-grid layout');
+
+  console.log('✓ Windows Native Storage & Administrative Tools Integration verified');
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);

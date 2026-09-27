@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('myFilesAPI', {
   restoreRecycleItem: (path) => ipcRenderer.invoke('restore-recycle-item', path),
   restoreAllRecycle: () => ipcRenderer.invoke('restore-all-recycle'),
   deletePermanently: (path) => ipcRenderer.invoke('delete-permanently', path),
+  launchWindowsTool: (tool, drive) => ipcRenderer.invoke('launch-windows-tool', tool, drive),
 
   // Window Controls
   windowControl: (action) => ipcRenderer.invoke('window-control', action),

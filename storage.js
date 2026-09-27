@@ -553,6 +553,47 @@ function deletePermanentlyRecycleBinItem(itemPathOrName) {
   });
 }
 
+/**
+ * Launches native Windows Administrative and Storage Management Tools safely.
+ * @param {string} toolName - Name of the tool: 'diskmgmt', 'cleanmgr', 'dfrgui', 'resmon', 'devmgmt', 'taskmgr', 'sysdm', 'appwiz'
+ * @param {string} driveLetter - Optional target drive letter (e.g. 'C')
+ */
+function launchWindowsTool(toolName, driveLetter = '') {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') {
+      return resolve({ success: false, error: 'Platform not supported' });
+    }
+
+    const drive = (driveLetter || 'C').replace(/[^a-zA-Z]/g, '').toUpperCase().charAt(0) || 'C';
+
+    const toolCommands = {
+      'cleanmgr': `cleanmgr.exe /d ${drive}`,
+      'diskmgmt': 'diskmgmt.msc',
+      'dfrgui': 'dfrgui.exe',
+      'resmon': 'resmon.exe',
+      'devmgmt': 'devmgmt.msc',
+      'taskmgr': 'taskmgr.exe',
+      'sysdm': 'sysdm.cpl',
+      'appwiz': 'appwiz.cpl',
+      'services': 'services.msc',
+      'storagesettings': 'start ms-settings:storagesense'
+    };
+
+    const cmd = toolCommands[toolName.toLowerCase()];
+    if (!cmd) {
+      return resolve({ success: false, error: `Unknown tool: ${toolName}` });
+    }
+
+    const commandToExec = cmd.startsWith('start ') ? cmd : `start "" ${cmd}`;
+    exec(commandToExec, { windowsHide: true }, (err) => {
+      if (err) {
+        return resolve({ success: false, error: err.message });
+      }
+      resolve({ success: true, tool: toolName });
+    });
+  });
+}
+
 module.exports = {
   classifyExtension,
   analyzeStorage,
@@ -563,5 +604,7 @@ module.exports = {
   restoreRecycleBinItem,
   restoreAllRecycleBinItems,
   deletePermanentlyRecycleBinItem,
+  launchWindowsTool,
   EXTENSION_CATEGORIES
 };
+

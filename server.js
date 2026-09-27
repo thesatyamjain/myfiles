@@ -736,6 +736,18 @@ server = http.createServer(async (req, res) => {
         return;
       }
 
+      // 27b. Launch Native Windows Tool API
+      if (pathname === '/api/launch-windows-tool' && req.method === 'POST') {
+        try {
+          const out = await storage.launchWindowsTool(data && data.tool, data && data.drive);
+          res.end(JSON.stringify(out));
+        } catch (err) {
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+        return;
+      }
+
+
       // 28. Analyze Storage API
       if (pathname === '/api/storage/analyze' && req.method === 'POST') {
         try {

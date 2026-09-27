@@ -88,6 +88,10 @@
       if (window.myFilesAPI && window.myFilesAPI.deletePermanently) return window.myFilesAPI.deletePermanently(p);
       return fetch(`${SERVER_ORIGIN}/api/recycle-bin/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: p }) }).then(r => r.json());
     },
+    launchWindowsTool: (tool, drive) => {
+      if (window.myFilesAPI && window.myFilesAPI.launchWindowsTool) return window.myFilesAPI.launchWindowsTool(tool, drive);
+      return fetch(`${SERVER_ORIGIN}/api/launch-windows-tool`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tool, drive }) }).then(r => r.json());
+    },
     getFileDetails: (p) => fetch(`${SERVER_ORIGIN}/api/file-details?path=` + encodeURIComponent(p)).then(r => r.json()),
     setAttributes: (path, attrs) => fetch(`${SERVER_ORIGIN}/api/set-attributes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path, ...attrs }) }).then(r => r.json()),
     makeDefaultFileManager: () => (window.myFilesAPI && window.myFilesAPI.makeDefaultFileManager ? window.myFilesAPI.makeDefaultFileManager() : fetch(`${SERVER_ORIGIN}/api/make-default`, { method: 'POST' }).then(r => r.json())),
@@ -10531,6 +10535,26 @@
         openDeduplicationModal(state.storageCurrentDrive);
       });
     }
+
+    // Windows Native Storage & Administrative Tools Launchers
+    document.querySelectorAll('.btn-launch-win-tool').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const toolName = btn.dataset.tool;
+        if (!toolName) return;
+        const driveLetter = (state.storageCurrentDrive || 'C').charAt(0);
+        showToast(`Launching Windows tool: ${toolName}...`, 'info');
+        try {
+          const res = await api.launchWindowsTool(toolName, driveLetter);
+          if (res && res.success) {
+            showToast(`Opened Windows tool: ${toolName}`, 'success');
+          } else {
+            showToast(`Could not launch tool: ${res?.error || 'Unknown error'}`, 'error');
+          }
+        } catch (err) {
+          showToast(`Launch failed: ${err.message}`, 'error');
+        }
+      });
+    });
 
     // Share Hub Modal Listeners
     if (el.btnCloseShareModal) el.btnCloseShareModal.addEventListener('click', closeShareModal);

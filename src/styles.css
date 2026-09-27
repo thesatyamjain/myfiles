@@ -6628,6 +6628,42 @@ details[open] > .gi-summary .gi-chevron {
   color: #8b5cf6;
 }
 
+.storage-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.storage-card-icon-wrap.wintool-icon {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+}
+.storage-card-icon-wrap.win-cleanmgr {
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+}
+.storage-card-icon-wrap.win-diskmgmt {
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+}
+.storage-card-icon-wrap.win-defrag {
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+}
+.storage-card-icon-wrap.win-resmon {
+  background: rgba(168, 85, 247, 0.14);
+  color: #a855f7;
+}
+.storage-card-icon-wrap.win-settings {
+  background: rgba(99, 102, 241, 0.14);
+  color: #6366f1;
+}
+.storage-card-icon-wrap.win-devmgmt {
+  background: rgba(236, 72, 153, 0.14);
+  color: #ec4899;
+}
+
 .storage-card-icon-wrap svg {
   width: 18px;
   height: 18px;
