@@ -1654,6 +1654,31 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
 
   console.log('✓ Windows Native Storage & Administrative Tools Integration verified');
 
+  // 48. DOM Integrity & Element ID Parity Check
+  const dynamicTemplateIds = new Set(['backendOfflineBanner', 'btnRetryBackend', 'tabContextMenu', 'recycleContextMenu', 'galleryHeroImg', 'ppHeroThumb']);
+  const idMatches = Array.from(updatedRenderer.matchAll(/document\.getElementById\(['"]([^'"]+)['"]\)/g)).map(m => m[1]);
+  const missingFromHtml = idMatches.filter(id => !dynamicTemplateIds.has(id) && !updatedIndex.includes(`id="${id}"`) && !updatedIndex.includes(`id='${id}'`));
+  if (missingFromHtml.length > 0) {
+    console.warn('Elements queried in renderer.js but not in index.html:', missingFromHtml);
+  }
+  assert(missingFromHtml.length === 0, `All static DOM IDs queried in renderer.js must exist in index.html: ${missingFromHtml.join(', ')}`);
+  console.log('✓ DOM Integrity & Element ID Parity (All elements in app) verified');
+
+  // 49. Dual Runtime API Parity Check (Electron IPC & Server REST)
+  const mainHandles = Array.from(mainSrc.matchAll(/ipcMain\.handle\('([^']+)'/g)).map(m => m[1]);
+  const missingIpc = mainHandles.filter(h => !preloadSrc.includes(h));
+  assert(missingIpc.length === 0, `All main.js IPC handlers must be exposed in preload.js: ${missingIpc.join(', ')}`);
+
+  const serverRouteMatches = Array.from(updatedRenderer.matchAll(/SERVER_ORIGIN\s*\+\s*['"](\/api\/[a-zA-Z0-9_\-\/]+?)(?:[?'"])/g)).map(m => m[1]);
+  const templateRouteMatches = Array.from(updatedRenderer.matchAll(/\$\{SERVER_ORIGIN\}(\/api\/[a-zA-Z0-9_\-\/]+?)(?:[?`'"])/g)).map(m => m[1]);
+  const allClientRoutes = Array.from(new Set([...serverRouteMatches, ...templateRouteMatches]));
+  const missingServerRoutes = allClientRoutes.filter(r => !serverSrc.includes(`'${r}'`) && !serverSrc.includes(`"${r}"`));
+  if (missingServerRoutes.length > 0) {
+    console.warn('Client routes missing from server.js:', missingServerRoutes);
+  }
+  assert(missingServerRoutes.length === 0, `All client API endpoints must have corresponding routes in server.js: ${missingServerRoutes.join(', ')}`);
+  console.log(`✓ Dual Runtime API Parity (${mainHandles.length} IPC channels & ${allClientRoutes.length} REST endpoints) verified`);
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);

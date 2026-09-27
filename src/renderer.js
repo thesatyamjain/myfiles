@@ -951,7 +951,7 @@
     modalBtnConfirm: document.getElementById('modalBtnConfirm'),
 
     // Appearance Theme Switcher
-    themeSegmentedCtrl: document.getElementById('themeSegmentedCtrl'),
+    themeSegmentedCtrl: document.getElementById('settingsThemeCtrl'),
 
     // Toolbar Settings & Preferences Modal
     btnToolbarSettings: document.getElementById('btnToolbarSettings'),
@@ -1039,8 +1039,6 @@
     ctxViewOptions: document.getElementById('ctxViewOptions'),
 
     // macOS Finder Toolbar & Context additions
-    btnToolbarGetInfo: document.getElementById('btnToolbarGetInfo'),
-    btnToolbarGoToFolder: document.getElementById('btnToolbarGoToFolder'),
     moreActGetInfo: document.getElementById('moreActGetInfo'),
     moreActGoToFolder: document.getElementById('moreActGoToFolder'),
     moreActNewFolderWithSelection: document.getElementById('moreActNewFolderWithSelection'),
@@ -1147,7 +1145,6 @@
     shareOptNearby: document.getElementById('shareOptNearby'),
     shareOptEmail: document.getElementById('shareOptEmail'),
     shareOptUnc: document.getElementById('shareOptUnc'),
-    shareOptExplorer: document.getElementById('shareOptExplorer'),
     btnShareCopyWifiLink: document.getElementById('btnShareCopyWifiLink'),
     shareQrContainer: document.getElementById('shareQrContainer'),
     shareWifiUrlDisplay: document.getElementById('shareWifiUrlDisplay'),
@@ -9328,18 +9325,6 @@
       });
     }
 
-    if (el.btnToolbarGetInfo) {
-      el.btnToolbarGetInfo.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openGetInfoModal();
-      });
-    }
-    if (el.btnToolbarGoToFolder) {
-      el.btnToolbarGoToFolder.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openGoToFolderModal();
-      });
-    }
 
     if (el.btnToolbarMore && el.moreActionsDropdown) {
       el.btnToolbarMore.addEventListener('click', (e) => {
@@ -10715,14 +10700,6 @@
           navigator.clipboard.writeText(unc);
           showToast(`UNC Path copied for LAN sharing: ${unc}`, 'success');
         }
-      });
-    }
-
-    if (el.shareOptExplorer) {
-      el.shareOptExplorer.addEventListener('click', () => {
-        if (!shareTargetItem) return;
-        api.showInExplorer(shareTargetItem.path);
-        showToast('Revealed in Windows Explorer', 'info');
       });
     }
 
