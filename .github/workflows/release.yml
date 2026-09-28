@@ -28,7 +28,20 @@ jobs:
       - name: Run verification tests
         run: node test/self-check.js
 
-      - name: Build and publish release assets
+      - name: Build Windows Installer & Portable Executable
+        run: npx electron-builder --win nsis portable
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.0' }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'MyFiles v1.1.0' }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/*.exe
+            dist/*.yml
+            dist/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win nsis portable --publish always
