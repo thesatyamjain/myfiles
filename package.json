@@ -28,6 +28,8 @@
   "build": {
     "appId": "com.andruia.myfiles",
     "productName": "MyFiles",
+    "electronDist": "node_modules/electron/dist",
+    "npmRebuild": false,
     "directories": {
       "output": "dist"
     },
