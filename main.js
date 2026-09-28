@@ -10,6 +10,13 @@ const dedup = require('./dedup');
 const storage = require('./storage');
 const fsEngine = require('./fs-engine');
 
+// Set Windows Application User Model ID for proper taskbar grouping and branding
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.andruia.myfiles');
+}
+
+const appIconPath = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+
 let mainWindow = null;
 const windows = new Set();
 const windowInitialPaths = new Map();
@@ -119,6 +126,7 @@ function createWindow(initialTarget = null) {
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#0f172a',
+    icon: fs.existsSync(appIconPath) ? appIconPath : undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -126,6 +134,10 @@ function createWindow(initialTarget = null) {
       webSecurity: false // Allows previewing local media files seamlessly in Quick Look
     }
   });
+
+  if (fs.existsSync(appIconPath)) {
+    try { win.setIcon(appIconPath); } catch {}
+  }
 
   const webContentsId = win.webContents.id;
   windows.add(win);
