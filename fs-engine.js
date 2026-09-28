@@ -77,7 +77,7 @@ async function getDrives() {
         drives.push({
           letter,
           path: rootPath,
-          label: letter === 'C' ? 'OS Disk' : `Local Drive (${letter}:)`,
+          label: letter === 'C' ? 'OS Disk' : 'Local Drive',
           freeBytes,
           totalBytes,
           usedBytes: totalBytes > freeBytes ? totalBytes - freeBytes : 0

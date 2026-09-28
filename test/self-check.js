@@ -1761,6 +1761,19 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
 
   console.log('✓ Sort Grouping / Group By Engine & Visual Hierarchy Suite verified');
 
+  // 52. Drive Display Name Formatting & Non-Duplication Suite
+  assert(updatedRenderer.includes('formatDriveDisplayName'), 'renderer.js must implement formatDriveDisplayName');
+  const driveFormatMatch = updatedRenderer.match(/function formatDriveDisplayName\([\s\S]+?\n  \}/);
+  assert(driveFormatMatch, 'renderer.js must contain formatDriveDisplayName definition');
+  const formatDriveEval = new Function('drive', driveFormatMatch[0] + '\nreturn formatDriveDisplayName(drive);');
+
+  assert.strictEqual(formatDriveEval({ label: 'Local Drive (E:)', letter: 'E' }), 'Local Drive (E:)', 'Must not duplicate (E:) when already present');
+  assert.strictEqual(formatDriveEval({ label: 'Local Drive (D:) (D:)', letter: 'D' }), 'Local Drive (D:)', 'Must collapse duplicate (D:) (D:) to single (D:)');
+  assert.strictEqual(formatDriveEval({ label: 'OS Disk', letter: 'C' }), 'OS Disk (C:)', 'Must append letter to OS Disk');
+  assert.strictEqual(formatDriveEval({ label: 'Local Drive', letter: 'E' }), 'Local Drive (E:)', 'Must append letter to plain Local Drive');
+  assert.strictEqual(formatDriveEval({ label: 'Samsung SSD', letter: 'F' }), 'Samsung SSD (F:)', 'Must format custom drive names cleanly');
+  console.log('✓ Drive Display Name Formatting & Non-Duplication Suite verified');
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);

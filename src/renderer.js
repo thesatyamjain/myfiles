@@ -5682,6 +5682,17 @@
     }
   }
 
+  function formatDriveDisplayName(drive) {
+    if (!drive) return '';
+    const letter = drive.letter || (drive.path ? drive.path.charAt(0).toUpperCase() : '');
+    let label = (drive.label || (letter === 'C' ? 'OS Disk' : 'Local Drive')).trim();
+    if (letter) {
+      label = label.replace(new RegExp(`\\s*\\(${letter}:\\)`, 'gi'), '').trim();
+      return `${label} (${letter}:)`;
+    }
+    return label;
+  }
+
   // --- SIDEBAR DRIVES & PINS (Recovered Layout - media_1790265470605.png) ---
   function renderSidebarDrives() {
     if (!el.sidebarDrivesList) return;
@@ -5699,11 +5710,12 @@
            </button>`
         : '';
 
-      li.title = `${drive.label} (${pct}% used, ${formatBytes(drive.freeBytes)} free)`;
+      const displayName = formatDriveDisplayName(drive);
+      li.title = `${displayName} (${pct}% used, ${formatBytes(drive.freeBytes)} free)`;
 
       li.innerHTML = `
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg>
-        <span class="sidebar-item-label">${drive.label}</span>
+        <span class="sidebar-item-label">${displayName}</span>
         <div class="sidebar-drive-gauge" title="${pct}% used (${formatBytes(drive.freeBytes)} free)">
           <div class="sidebar-drive-fill" style="width: ${pct}%;"></div>
         </div>
@@ -8318,7 +8330,7 @@
       drivesList.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d.path;
-        opt.textContent = `${d.label || 'Local Drive'} (${d.letter}:)`;
+        opt.textContent = formatDriveDisplayName(d);
         if (d.path.toUpperCase().startsWith(drivePath.toUpperCase())) {
           opt.selected = true;
         }
@@ -8401,7 +8413,7 @@
   function renderStorageOverview(data) {
     const driveLetter = data.drive.charAt(0);
     const driveObj = (state.drives || []).find(d => d.letter === driveLetter);
-    const driveName = driveObj ? `${driveObj.label} (${driveLetter}:)` : `${data.drive} Volume`;
+    const driveName = driveObj ? formatDriveDisplayName(driveObj) : `${data.drive} Volume`;
 
     if (el.storageHeroDriveName) el.storageHeroDriveName.textContent = driveName;
     if (el.storageHeroUsed) el.storageHeroUsed.textContent = formatBytes(data.usedBytes);
