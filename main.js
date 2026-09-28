@@ -17,11 +17,61 @@ if (process.platform === 'win32') {
 }
 
 const appIconPath = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+let appNativeIcon = null;
+try {
+  if (fs.existsSync(appIconPath)) {
+    appNativeIcon = nativeImage.createFromPath(appIconPath);
+  }
+} catch (e) {
+  console.error('Failed loading native app icon:', e);
+}
 
 let mainWindow = null;
 const windows = new Set();
 const windowInitialPaths = new Map();
 const activeSearches = new Map();
+
+// Auto-updater integration (Over-The-Air updates via GitHub Releases)
+let autoUpdater = null;
+try {
+  ({ autoUpdater } = require('electron-updater'));
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  function broadcastUpdateStatus(data) {
+    windows.forEach(win => {
+      if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+        win.webContents.send('update-status', data);
+      }
+    });
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    broadcastUpdateStatus({ status: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    broadcastUpdateStatus({ status: 'available', version: info.version });
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    broadcastUpdateStatus({ status: 'up-to-date', version: info.version });
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    broadcastUpdateStatus({ status: 'downloading', percent: Math.round(progress.percent) });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    broadcastUpdateStatus({ status: 'ready', version: info.version });
+  });
+
+  autoUpdater.on('error', (err) => {
+    broadcastUpdateStatus({ status: 'error', message: err.message });
+  });
+} catch (err) {
+  console.warn('Auto-updater module not loaded:', err.message);
+}
 
 // Configuration directory
 const configDir = path.join(app.getPath('userData'), 'MyFilesConfig');
@@ -142,7 +192,7 @@ function createWindow(initialTarget = null) {
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#0f172a',
-    icon: fs.existsSync(appIconPath) ? appIconPath : undefined,
+    icon: (appNativeIcon && !appNativeIcon.isEmpty()) ? appNativeIcon : (fs.existsSync(appIconPath) ? appIconPath : undefined),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -151,7 +201,9 @@ function createWindow(initialTarget = null) {
     }
   });
 
-  if (fs.existsSync(appIconPath)) {
+  if (appNativeIcon && !appNativeIcon.isEmpty()) {
+    try { win.setIcon(appNativeIcon); } catch {}
+  } else if (fs.existsSync(appIconPath)) {
     try { win.setIcon(appIconPath); } catch {}
   }
 
@@ -208,6 +260,14 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  if (app.isPackaged && autoUpdater) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(err => {
+        console.warn('Background update check failed:', err.message);
+      });
+    }, 4000);
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -1056,4 +1116,32 @@ ipcMain.handle('delete-permanently', async (_event, itemPath) => {
   } catch (err) {
     return { success: false, error: err.message };
   }
+});
+
+// IPC: Check for Updates (OTA)
+ipcMain.handle('check-for-updates', async () => {
+  if (!app.isPackaged) {
+    return { status: 'dev-mode', message: 'Updates are active in installed production builds.' };
+  }
+  if (!autoUpdater) {
+    return { status: 'unavailable', message: 'Auto-updater service unavailable.' };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return {
+      status: 'checking',
+      updateInfo: result ? result.updateInfo : null
+    };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  }
+});
+
+// IPC: Quit and Install Update
+ipcMain.handle('quit-and-install-update', () => {
+  if (autoUpdater) {
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true };
+  }
+  return { success: false, error: 'Auto-updater not loaded' };
 });

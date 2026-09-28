@@ -109,7 +109,10 @@
     },
     windowControl: (action) => {
       if (action === 'close') window.close();
-    }
+    },
+    checkForUpdates: () => (window.myFilesAPI && window.myFilesAPI.checkForUpdates ? window.myFilesAPI.checkForUpdates() : Promise.resolve({ status: 'dev-mode', message: 'Updates unavailable in web server mode' })),
+    quitAndInstallUpdate: () => (window.myFilesAPI && window.myFilesAPI.quitAndInstallUpdate ? window.myFilesAPI.quitAndInstallUpdate() : Promise.resolve({ success: false })),
+    onUpdateStatus: (cb) => (window.myFilesAPI && window.myFilesAPI.onUpdateStatus ? window.myFilesAPI.onUpdateStatus(cb) : () => {})
   };
 
   // State Management
@@ -9979,6 +9982,67 @@
     if (el.btnSettingsDone) {
       el.btnSettingsDone.addEventListener('click', closeSettingsModal);
     }
+
+    // OTA Software Updates
+    const btnCheckUpdates = document.getElementById('btnCheckForUpdates');
+    const btnCheckText = document.getElementById('btnCheckForUpdatesText');
+    const btnRestart = document.getElementById('btnRestartAndUpdate');
+    const updateStatusText = document.getElementById('settingsUpdateStatusText');
+
+    if (btnCheckUpdates) {
+      btnCheckUpdates.addEventListener('click', async () => {
+        if (btnCheckUpdates.disabled) return;
+        btnCheckUpdates.disabled = true;
+        if (btnCheckText) btnCheckText.textContent = 'Checking...';
+        if (updateStatusText) updateStatusText.textContent = 'Checking GitHub Releases for updates...';
+
+        try {
+          const res = await api.checkForUpdates();
+          if (res && res.status === 'dev-mode') {
+            if (updateStatusText) updateStatusText.textContent = 'Installed version: v1.1.0 · Over-the-air updates active in packaged builds.';
+            showToast('Auto-updates run in packaged installer builds', 'info');
+          } else if (res && res.status === 'error') {
+            if (updateStatusText) updateStatusText.textContent = `Update check failed: ${res.message || 'Network error'}`;
+            showToast('Unable to check for updates', 'error');
+          }
+        } catch (err) {
+          if (updateStatusText) updateStatusText.textContent = `Update check failed: ${err.message}`;
+        } finally {
+          setTimeout(() => {
+            btnCheckUpdates.disabled = false;
+            if (btnCheckText) btnCheckText.textContent = 'Check for Updates';
+          }, 2000);
+        }
+      });
+    }
+
+    if (btnRestart) {
+      btnRestart.addEventListener('click', () => {
+        showToast('Restarting to apply update...', 'info');
+        api.quitAndInstallUpdate();
+      });
+    }
+
+    api.onUpdateStatus((data) => {
+      if (!data) return;
+      if (data.status === 'checking') {
+        if (updateStatusText) updateStatusText.textContent = 'Checking for updates...';
+      } else if (data.status === 'available') {
+        if (updateStatusText) updateStatusText.textContent = `Downloading update v${data.version}...`;
+        showToast(`Update v${data.version} found, downloading in background...`, 'info');
+      } else if (data.status === 'downloading') {
+        if (updateStatusText) updateStatusText.textContent = `Downloading update: ${data.percent}%`;
+      } else if (data.status === 'ready') {
+        if (updateStatusText) updateStatusText.textContent = `Update v${data.version} is downloaded and ready to install.`;
+        if (btnRestart) btnRestart.style.display = 'inline-flex';
+        showToast(`MyFiles v${data.version} ready to install`, 'success');
+      } else if (data.status === 'up-to-date') {
+        if (updateStatusText) updateStatusText.textContent = `MyFiles is up to date (v${data.version || '1.1.0'}).`;
+        showToast('MyFiles is up to date', 'success');
+      } else if (data.status === 'error') {
+        if (updateStatusText) updateStatusText.textContent = `Update error: ${data.message}`;
+      }
+    });
 
     // Settings Tabs Switching
     if (el.settingsTabBar) {

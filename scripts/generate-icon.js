@@ -74,22 +74,51 @@ app.whenReady().then(async () => {
       fs.writeFileSync(path.join(assetsDir, 'icon.png'), pngBuf);
       console.log('Successfully generated assets/icon.png! Size:', pngBuf.length);
 
-      // Pack into standard 256x256 Windows ICO binary format
-      const icoHeader = Buffer.alloc(22);
-      icoHeader.writeUInt16LE(0, 0); // reserved
-      icoHeader.writeUInt16LE(1, 2); // image type: 1 = ICO
-      icoHeader.writeUInt16LE(1, 4); // number of images
-      icoHeader.writeUInt8(0, 6);    // width 256 (0 = 256)
-      icoHeader.writeUInt8(0, 7);    // height 256 (0 = 256)
-      icoHeader.writeUInt8(0, 8);    // color count (0 = no palette)
-      icoHeader.writeUInt8(0, 9);    // reserved
-      icoHeader.writeUInt16LE(1, 10); // color planes
-      icoHeader.writeUInt16LE(32, 12); // bits per pixel (32-bit RGBA)
-      icoHeader.writeUInt32LE(pngBuf.length, 14); // image data size
-      icoHeader.writeUInt32LE(22, 18); // offset to image data (header size)
-      const icoBuf = Buffer.concat([icoHeader, pngBuf]);
+      // Generate multi-resolution icons for Windows taskbar, tray, Alt-Tab and desktop
+      const sizes = [16, 24, 32, 48, 64, 128, 256];
+      const frames = [];
+      for (const s of sizes) {
+        const resized = (s === 256) ? img : img.resize({ width: s, height: s, quality: 'best' });
+        frames.push({
+          size: s,
+          buf: resized.toPNG()
+        });
+      }
+
+      const count = frames.length;
+      const header = Buffer.alloc(6);
+      header.writeUInt16LE(0, 0); // reserved
+      header.writeUInt16LE(1, 2); // type 1 = ICO
+      header.writeUInt16LE(count, 4); // count of images
+
+      let offset = 6 + (16 * count);
+      const entries = [];
+      const buffers = [header];
+
+      for (const frame of frames) {
+        const entry = Buffer.alloc(16);
+        entry.writeUInt8(frame.size >= 256 ? 0 : frame.size, 0);
+        entry.writeUInt8(frame.size >= 256 ? 0 : frame.size, 1);
+        entry.writeUInt8(0, 2); // color count
+        entry.writeUInt8(0, 3); // reserved
+        entry.writeUInt16LE(1, 4); // planes
+        entry.writeUInt16LE(32, 6); // bpp
+        entry.writeUInt32LE(frame.buf.length, 8); // size
+        entry.writeUInt32LE(offset, 12); // offset
+        entries.push(entry);
+        offset += frame.buf.length;
+      }
+
+      for (const entry of entries) {
+        buffers.push(entry);
+      }
+      for (const frame of frames) {
+        buffers.push(frame.buf);
+      }
+
+      const icoBuf = Buffer.concat(buffers);
       fs.writeFileSync(path.join(assetsDir, 'icon.ico'), icoBuf);
-      console.log('Successfully generated assets/icon.ico! Size:', icoBuf.length);
+      console.log('Successfully generated multi-resolution assets/icon.ico! Size:', icoBuf.length, 'frames:', count);
     } catch (e) {
       console.error('Failed capturing icon:', e);
     } finally {

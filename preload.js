@@ -101,5 +101,14 @@ contextBridge.exposeInMainWorld('myFilesAPI', {
 
   // Shell Verb / Default File Manager Integration
   makeDefaultFileManager: () => ipcRenderer.invoke('make-default'),
-  restoreDefaultFileManager: () => ipcRenderer.invoke('restore-default')
+  restoreDefaultFileManager: () => ipcRenderer.invoke('restore-default'),
+
+  // Over-The-Air (OTA) Updates
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  quitAndInstallUpdate: () => ipcRenderer.invoke('quit-and-install-update'),
+  onUpdateStatus: (callback) => {
+    const sub = (_event, data) => callback(data);
+    ipcRenderer.on('update-status', sub);
+    return () => ipcRenderer.removeListener('update-status', sub);
+  }
 });

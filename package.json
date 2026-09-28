@@ -29,6 +29,11 @@
   "build": {
     "appId": "com.andruia.myfiles",
     "productName": "MyFiles",
+    "publish": {
+      "provider": "github",
+      "owner": "thesatyamjain",
+      "repo": "myfiles"
+    },
     "npmRebuild": false,
     "directories": {
       "output": "dist"
@@ -70,5 +75,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "MyFiles"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }
