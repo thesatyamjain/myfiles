@@ -146,6 +146,13 @@ function createWindow(initialTarget = null) {
     windowInitialPaths.set(webContentsId, { targetPath, selectItem });
   }
 
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:'))) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   win.on('closed', () => {
     windows.delete(win);
     windowInitialPaths.delete(webContentsId);

@@ -11259,6 +11259,15 @@
       });
     }
 
+    // External link handlers (Settings Credits & Developer URLs)
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a.settings-credit-link, a.settings-about-link-btn');
+      if (link && link.href) {
+        e.preventDefault();
+        api.openExternal(link.href);
+      }
+    });
+
     // Global click dismissals
     document.addEventListener('click', (e) => {
       if (el.newFileDropdown && !el.newFileDropdown.contains(e.target) && !e.target.closest('#btnNewFileMenu')) {
