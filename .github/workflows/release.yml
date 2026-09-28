@@ -29,7 +29,9 @@ jobs:
         run: node test/self-check.js
 
       - name: Build Windows Installer & Portable Executable
-        run: npx electron-builder --win nsis portable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis portable --publish never
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
