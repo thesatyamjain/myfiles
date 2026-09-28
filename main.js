@@ -84,14 +84,29 @@ const initialTargetPath = extractPathArg(process.argv);
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
-  app.quit();
+  app.exit(0);
 } else {
   app.on('second-instance', (_event, commandLine) => {
     const target = extractPathArg(commandLine);
-    const win = createWindow(target);
-    if (win) {
-      if (win.isMinimized()) win.restore();
-      win.focus();
+    const existingWindows = BrowserWindow.getAllWindows().filter(w => !w.isDestroyed());
+    if (existingWindows.length === 0) {
+      createWindow(target);
+      return;
+    }
+    if (target) {
+      const win = createWindow(target);
+      if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.focus();
+      }
+    } else {
+      const win = BrowserWindow.getFocusedWindow() || existingWindows[0];
+      if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.focus();
+      }
     }
   });
 }
@@ -196,7 +211,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') {
+    app.exit(0);
+  }
 });
 
 // IPC: Initial directory path passed from command line / shell association
