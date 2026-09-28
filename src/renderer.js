@@ -2847,8 +2847,10 @@
     if (!rootPath) return;
     const cleanLower = rootPath.trim().toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
     if (cleanLower === 'recycle bin' || cleanLower === 'recycle-bin' || cleanLower === 'trash') {
-      const res = await api.readDir('recycle-bin');
-      const sortedItems = sortItemList(res.items || []);
+      const items = (state.currentPath === 'Recycle Bin' && state.rawItems && state.rawItems.length > 0)
+        ? state.rawItems
+        : ((await api.readDir('recycle-bin'))?.items || []);
+      const sortedItems = sortItemList(items);
       const selectedItem = sortedItems.length > 0 ? (sortedItems.find(item => state.showHidden || !isSystemOrHidden(item)) || sortedItems[0]) : null;
       state.millerColumns = [{
         path: 'Recycle Bin',
@@ -2929,7 +2931,7 @@
     const leafCol = state.millerColumns[state.millerColumns.length - 1];
     if (leafCol && leafCol.selectedItem) {
       state.activeItem = leafCol.selectedItem;
-      if (leafCol.selectedItem.isDirectory) {
+      if (leafCol.selectedItem.isDirectory && !leafCol.selectedItem.isRecycleBinItem) {
         const childRes = await api.readDir(leafCol.selectedItem.path);
         if (childRes.success) {
           state.millerColumns.push({
@@ -5957,18 +5959,26 @@
       const msg = count > 0 
         ? `Permanently delete ${count} item${count > 1 ? 's' : ''} (${formatBytes(stats.bytes || 0)}) from the Recycle Bin? This action cannot be undone.`
         : 'Permanently empty all items from the Recycle Bin? This action cannot be undone.';
-      if (!confirm(msg)) return;
-      showToast('Emptying Recycle Bin...', 'info');
-      const res = await api.emptyRecycleBin();
-      if (res?.success !== false) {
-        showToast('Recycle Bin emptied successfully', 'success');
-        updateRecycleBinBadge();
-        if (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin') {
-          navigateTo('recycle-bin', false);
-        }
-      } else {
-        showToast('Failed to empty Recycle Bin: ' + (res.error || 'Unknown error'), 'error');
-      }
+      showConfirmModal(
+        'Empty Recycle Bin',
+        msg,
+        async () => {
+          showToast('Emptying Recycle Bin...', 'info');
+          const res = await api.emptyRecycleBin();
+          if (res?.success !== false) {
+            showToast('Recycle Bin emptied successfully', 'success');
+            updateRecycleBinBadge();
+            if (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin') {
+              navigateTo('recycle-bin', false);
+            }
+          } else {
+            showToast('Failed to empty Recycle Bin: ' + (res.error || 'Unknown error'), 'error');
+          }
+        },
+        'Empty Recycle Bin',
+        'Cancel',
+        true
+      );
     } catch (err) {
       showToast('Error emptying Recycle Bin: ' + (err?.message || err), 'error');
     }
@@ -5977,9 +5987,13 @@
   function handleRecycleItemDoubleClick(item) {
     if (!item) return;
     const orig = item.originalLocation || item.originalPath || 'its original location';
-    if (confirm(`Restore "${item.name}" to ${orig}?`)) {
-      handleRestoreSelectedItem(item);
-    }
+    showConfirmModal(
+      'Restore Deleted Item',
+      `Do you want to restore "${item.name}" to its original location (${orig})?`,
+      () => handleRestoreSelectedItem(item),
+      'Restore',
+      'Cancel'
+    );
   }
 
   async function handleRestoreSelectedItem(targetItem = null) {
@@ -6013,24 +6027,29 @@
       showToast('Recycle Bin is already empty', 'info');
       return;
     }
-    if (!confirm(`Restore all ${state.items.length} items to their original locations?`)) {
-      return;
-    }
-    showToast('Restoring all items...', 'info');
-    try {
-      const res = await api.restoreAllRecycle();
-      if (res?.success !== false) {
-        showToast('All items restored successfully', 'success');
-        await updateRecycleBinBadge();
-        if (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin') {
-          await navigateTo('recycle-bin', false);
+    showConfirmModal(
+      'Restore All Items',
+      `Restore all ${state.items.length} items to their original locations?`,
+      async () => {
+        showToast('Restoring all items...', 'info');
+        try {
+          const res = await api.restoreAllRecycle();
+          if (res?.success !== false) {
+            showToast('All items restored successfully', 'success');
+            await updateRecycleBinBadge();
+            if (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin') {
+              await navigateTo('recycle-bin', false);
+            }
+          } else {
+            showToast(res?.error || 'Could not restore items', 'error');
+          }
+        } catch (err) {
+          showToast('Error restoring items: ' + (err?.message || err), 'error');
         }
-      } else {
-        showToast(res?.error || 'Could not restore items', 'error');
-      }
-    } catch (err) {
-      showToast('Error restoring items: ' + (err?.message || err), 'error');
-    }
+      },
+      'Restore All',
+      'Cancel'
+    );
   }
 
   async function handleDeletePermanentlyItem(targetItem = null) {
@@ -6042,24 +6061,30 @@
       showToast('Select an item to delete permanently', 'info');
       return;
     }
-    if (!confirm(`Permanently delete "${item.name}"? This action cannot be undone.`)) {
-      return;
-    }
-    showToast(`Permanently deleting "${item.name}"...`, 'info');
-    try {
-      const res = await api.deletePermanently(item.path);
-      if (res?.success !== false) {
-        showToast(`Deleted "${item.name}" permanently`, 'success');
-        await updateRecycleBinBadge();
-        if (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin') {
-          await navigateTo('recycle-bin', false);
+    showConfirmModal(
+      'Permanently Delete Item',
+      `Permanently delete "${item.name}"? This action cannot be undone.`,
+      async () => {
+        showToast(`Permanently deleting "${item.name}"...`, 'info');
+        try {
+          const res = await api.deletePermanently(item.path);
+          if (res?.success !== false) {
+            showToast(`Deleted "${item.name}" permanently`, 'success');
+            await updateRecycleBinBadge();
+            if (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin') {
+              await navigateTo('recycle-bin', false);
+            }
+          } else {
+            showToast(res?.error || 'Could not delete item', 'error');
+          }
+        } catch (err) {
+          showToast('Error deleting item: ' + (err?.message || err), 'error');
         }
-      } else {
-        showToast(res?.error || 'Could not delete item', 'error');
-      }
-    } catch (err) {
-      showToast('Error deleting item: ' + (err?.message || err), 'error');
-    }
+      },
+      'Delete Permanently',
+      'Cancel',
+      true
+    );
   }
 
   function toggleSidebar(forceState = null) {
@@ -6704,6 +6729,14 @@
     el.modalDesc.textContent = desc;
     el.modalInput.value = initialValue || '';
     el.modalInputWrapper.style.display = 'block';
+    if (el.modalBtnConfirm) {
+      el.modalBtnConfirm.textContent = 'Confirm';
+      el.modalBtnConfirm.className = 'modal-btn btn-primary';
+    }
+    if (el.modalBtnCancel) {
+      el.modalBtnCancel.style.display = 'inline-flex';
+      el.modalBtnCancel.textContent = 'Cancel';
+    }
     el.modalOverlay.style.display = 'flex';
     modalConfirmCallback = () => onConfirm(el.modalInput.value);
     el.modalInput.focus();
@@ -6716,10 +6749,18 @@
     }
   }
 
-  function showConfirmModal(title, desc, onConfirm) {
+  function showConfirmModal(title, desc, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel', isDanger = false) {
     el.modalTitle.textContent = title;
     el.modalDesc.textContent = desc;
     el.modalInputWrapper.style.display = 'none';
+    if (el.modalBtnConfirm) {
+      el.modalBtnConfirm.textContent = confirmText;
+      el.modalBtnConfirm.className = `modal-btn ${isDanger ? 'btn-danger' : 'btn-primary'}`;
+    }
+    if (el.modalBtnCancel) {
+      el.modalBtnCancel.textContent = cancelText;
+      el.modalBtnCancel.style.display = 'inline-flex';
+    }
     el.modalOverlay.style.display = 'flex';
     modalConfirmCallback = onConfirm;
   }
@@ -6728,14 +6769,25 @@
     el.modalTitle.textContent = title;
     el.modalDesc.textContent = message;
     el.modalInputWrapper.style.display = 'none';
-    el.modalBtnCancel.style.display = 'none';
+    if (el.modalBtnCancel) el.modalBtnCancel.style.display = 'none';
+    if (el.modalBtnConfirm) {
+      el.modalBtnConfirm.textContent = 'OK';
+      el.modalBtnConfirm.className = 'modal-btn btn-primary';
+    }
     el.modalOverlay.style.display = 'flex';
     modalConfirmCallback = () => {};
   }
 
   function closeModal() {
     el.modalOverlay.style.display = 'none';
-    el.modalBtnCancel.style.display = 'block';
+    if (el.modalBtnCancel) {
+      el.modalBtnCancel.style.display = 'inline-flex';
+      el.modalBtnCancel.textContent = 'Cancel';
+    }
+    if (el.modalBtnConfirm) {
+      el.modalBtnConfirm.textContent = 'Confirm';
+      el.modalBtnConfirm.className = 'modal-btn btn-primary';
+    }
     modalConfirmCallback = null;
   }
 
@@ -8292,22 +8344,27 @@
     const toDelete = Array.from(state.dedupSelectedFiles);
     if (toDelete.length === 0) return;
 
-    if (!confirm(`Are you sure you want to delete ${toDelete.length} duplicate file${toDelete.length > 1 ? 's' : ''}? This will permanently remove them.`)) {
-      return;
-    }
+    showConfirmModal(
+      'Delete Duplicate Files',
+      `Are you sure you want to delete ${toDelete.length} duplicate file${toDelete.length > 1 ? 's' : ''}? This will permanently remove them.`,
+      async () => {
+        el.btnDedupDelete.disabled = true;
+        el.btnDedupDelete.textContent = 'Deleting...';
 
-    el.btnDedupDelete.disabled = true;
-    el.btnDedupDelete.textContent = 'Deleting...';
-
-    const res = await api.deleteDuplicates(toDelete);
-    if (res && res.success) {
-      showToast(`Successfully deleted ${res.deletedCount} duplicates (${formatBytes(res.freedBytes)} freed)`, 'success');
-      await navigateTo(state.currentPath, false);
-      await executeDeduplicationScan();
-    } else {
-      showToast(`Deletion completed with errors: ${res?.error || 'Some files could not be deleted'}`, 'error');
-      await executeDeduplicationScan();
-    }
+        const res = await api.deleteDuplicates(toDelete);
+        if (res && res.success) {
+          showToast(`Successfully deleted ${res.deletedCount} duplicates (${formatBytes(res.freedBytes)} freed)`, 'success');
+          await navigateTo(state.currentPath, false);
+          await executeDeduplicationScan();
+        } else {
+          showToast(`Deletion completed with errors: ${res?.error || 'Some files could not be deleted'}`, 'error');
+          await executeDeduplicationScan();
+        }
+      },
+      'Delete Duplicates',
+      'Cancel',
+      true
+    );
   }
 
   // --- NATIVE STORAGE MANAGEMENT ENGINE ---
@@ -8558,21 +8615,27 @@
 
       const btnDelete = tr.querySelector('.btn-storage-delete');
       if (btnDelete) {
-        btnDelete.addEventListener('click', async () => {
-          if (confirm(`Move "${file.name}" to Trash?`)) {
-            try {
-              const delRes = await api.deleteItem(file.path);
-              if (delRes && delRes.success) {
-                showToast(`Deleted "${file.name}"`, 'info');
-                tr.remove();
-                await loadStorageData(state.storageCurrentDrive);
-              } else {
-                showToast(delRes?.error || 'Could not delete item', 'error');
+        btnDelete.addEventListener('click', () => {
+          showConfirmModal(
+            'Move to Trash',
+            `Move "${file.name}" to the Recycle Bin?`,
+            async () => {
+              try {
+                const delRes = await api.deleteItem(file.path);
+                if (delRes && delRes.success) {
+                  showToast(`Deleted "${file.name}"`, 'info');
+                  tr.remove();
+                  await loadStorageData(state.storageCurrentDrive);
+                } else {
+                  showToast(delRes?.error || 'Could not delete item', 'error');
+                }
+              } catch (err) {
+                showToast(`Delete failed: ${err.message}`, 'error');
               }
-            } catch (err) {
-              showToast(`Delete failed: ${err.message}`, 'error');
-            }
-          }
+            },
+            'Move to Trash',
+            'Cancel'
+          );
         });
       }
 
@@ -8645,28 +8708,33 @@
 
   async function emptyStorageRecycleBin() {
     if (!el.btnStorageEmptyRecycle) return;
-    if (!confirm('Permanently delete all files in the Recycle Bin? This action cannot be undone.')) {
-      return;
-    }
+    showConfirmModal(
+      'Empty Recycle Bin',
+      'Permanently delete all files in the Recycle Bin? This action cannot be undone.',
+      async () => {
+        el.btnStorageEmptyRecycle.disabled = true;
+        const oldText = el.btnStorageEmptyRecycle.textContent;
+        el.btnStorageEmptyRecycle.textContent = 'Emptying...';
 
-    el.btnStorageEmptyRecycle.disabled = true;
-    const oldText = el.btnStorageEmptyRecycle.textContent;
-    el.btnStorageEmptyRecycle.textContent = 'Emptying...';
-
-    try {
-      const res = await api.storageEmptyRecycle(state.storageCurrentDrive);
-      if (res && res.success) {
-        showToast('Recycle Bin emptied successfully', 'success');
-        await loadStorageData(state.storageCurrentDrive);
-      } else {
-        showToast(`Failed to empty Recycle Bin: ${res?.error || 'Unknown error'}`, 'error');
-      }
-    } catch (err) {
-      showToast(`Error: ${err.message}`, 'error');
-    } finally {
-      el.btnStorageEmptyRecycle.disabled = false;
-      el.btnStorageEmptyRecycle.textContent = oldText;
-    }
+        try {
+          const res = await api.storageEmptyRecycle(state.storageCurrentDrive);
+          if (res && res.success) {
+            showToast('Recycle Bin emptied successfully', 'success');
+            await loadStorageData(state.storageCurrentDrive);
+          } else {
+            showToast(`Failed to empty Recycle Bin: ${res?.error || 'Unknown error'}`, 'error');
+          }
+        } catch (err) {
+          showToast(`Error: ${err.message}`, 'error');
+        } finally {
+          el.btnStorageEmptyRecycle.disabled = false;
+          el.btnStorageEmptyRecycle.textContent = oldText;
+        }
+      },
+      'Empty Recycle Bin',
+      'Cancel',
+      true
+    );
   }
 
   // --- SHARE HUB ENGINE (Windows Native Options & Windows Share Apps Directory) ---

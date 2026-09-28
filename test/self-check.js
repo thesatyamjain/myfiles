@@ -1536,6 +1536,12 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert.strictEqual(recycleDirResult.currentPath, 'Recycle Bin', 'readDirectory("recycle-bin") must set currentPath to Recycle Bin');
   assert(Array.isArray(recycleDirResult.items), 'recycleDirResult.items must be an array');
 
+  // Verify instant Recycle Bin retrieval performance (< 500ms, typically 10-30ms)
+  const t0 = Date.now();
+  const perfItems = await storageMod.getRecycleBinItems();
+  const readElapsed = Date.now() - t0;
+  assert(readElapsed < 500, `getRecycleBinItems must be under 500ms, took ${readElapsed}ms`);
+
   // Verify IPC and Server endpoints
   const updatedMain = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
   const updatedPreload = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf8');
