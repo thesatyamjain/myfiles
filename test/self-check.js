@@ -3,6 +3,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 
 console.log('Running MyFiles core engine self-checks...');
 
@@ -1666,6 +1667,13 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(updatedStyles.includes('.storage-tools-grid'), 'styles.css must style .storage-tools-grid layout');
 
   console.log('✓ Windows Native Storage & Administrative Tools Integration verified');
+
+  // Whole-file JavaScript Syntax Validation Check
+  const jsFilesToValidate = ['src/renderer.js', 'main.js', 'preload.js', 'server.js', 'storage.js', 'fs-engine.js'];
+  jsFilesToValidate.forEach(file => {
+    execSync(`node -c "${path.join(__dirname, '..', file)}"`);
+  });
+  console.log(`✓ Whole-file syntax validation passed for all ${jsFilesToValidate.length} core JS files`);
 
   // 48. DOM Integrity & Element ID Parity Check
   const dynamicTemplateIds = new Set(['backendOfflineBanner', 'btnRetryBackend', 'tabContextMenu', 'recycleContextMenu', 'galleryHeroImg', 'ppHeroThumb']);

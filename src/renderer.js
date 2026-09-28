@@ -3319,7 +3319,10 @@
     pane.querySelector('#cpBtnQuickLook').addEventListener('click', () => openQuickLook(item));
     pane.querySelector('#cpBtnOpen').addEventListener('click', () => api.openItem(item.path));
 
-    // --- SORT GROUPING / GROUP BY SUBSYSTEM ---
+    return pane;
+  }
+
+  // --- SORT GROUPING / GROUP BY SUBSYSTEM ---
   const groupLabelMap = {
     none: 'None',
     kind: 'Kind / Type',
