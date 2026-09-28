@@ -30,7 +30,6 @@
     "appId": "com.andruia.myfiles",
     "productName": "MyFiles",
     "npmRebuild": false,
-    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "dist"
     },
