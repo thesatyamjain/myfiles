@@ -8,6 +8,7 @@
     "server": "node server.js",
     "test": "node test/self-check.js",
     "build": "npx electron-builder --win nsis portable",
+    "build:local": "npx electron-builder --win nsis portable --config.electronDist=node_modules/electron/dist --publish never",
     "build:installer": "npx electron-builder --win nsis",
     "build:portable": "npx electron-builder --win portable",
     "build:dir": "npx electron-builder --dir"
@@ -28,7 +29,6 @@
   "build": {
     "appId": "com.andruia.myfiles",
     "productName": "MyFiles",
-    "electronDist": "node_modules/electron/dist",
     "npmRebuild": false,
     "directories": {
       "output": "dist"
