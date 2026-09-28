@@ -1791,6 +1791,17 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   }
   console.log('✓ Packaging Build Configuration & ASAR Module Integrity Suite verified');
 
+  // 54. Default Windows File Manager Registry Integration Suite
+  const mainCode = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  const serverCode = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert(!mainCode.includes('register-default-file-manager.bat'), 'main.js must not depend on external .bat files for make-default');
+  assert(!mainCode.includes('restore-windows-explorer.bat'), 'main.js must not depend on external .bat files for restore-default');
+  assert(!serverCode.includes('register-default-file-manager.bat'), 'server.js must not depend on external .bat files for make-default');
+  assert(!serverCode.includes('restore-windows-explorer.bat'), 'server.js must not depend on external .bat files for restore-default');
+  assert(mainCode.includes("runRegCommand(['add', 'HKCU\\\\Software\\\\Classes\\\\Directory\\\\shell\\\\MyFiles'"), 'main.js must add Directory shell registry key directly');
+  assert(mainCode.includes("runRegCommand(['add', 'HKCU\\\\Software\\\\Classes\\\\Drive\\\\shell\\\\MyFiles'"), 'main.js must add Drive shell registry key directly');
+  console.log('✓ Default Windows File Manager Registry Integration Suite verified');
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);

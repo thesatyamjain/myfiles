@@ -719,11 +719,24 @@ server = http.createServer(async (req, res) => {
       // 26. Register Default File Manager
       if (pathname === '/api/make-default' && req.method === 'POST') {
         try {
-          const script = path.join(__dirname, 'scripts', 'register-default-file-manager.bat');
-          exec(`cmd.exe /c "${script.replace(/"/g, '""')}"`, (err) => {
-            if (err) res.end(JSON.stringify({ success: false, error: err.message }));
-            else res.end(JSON.stringify({ success: true }));
-          });
+          const appDir = path.resolve(__dirname);
+          const electronExe = path.join(appDir, 'node_modules', 'electron', 'dist', 'electron.exe');
+          const launchCmd = fs.existsSync(electronExe)
+            ? `"${electronExe}" "${appDir}" "%1"`
+            : `"${process.execPath}" "${path.join(appDir, 'server.js')}" "%1"`;
+          
+          const { execFile } = require('child_process');
+          const runReg = (args) => new Promise((resolve) => execFile('reg.exe', args, () => resolve()));
+
+          await runReg(['add', 'HKCU\\Software\\Classes\\Directory\\shell\\MyFiles', '/ve', '/d', 'Open in MyFiles', '/f']);
+          await runReg(['add', 'HKCU\\Software\\Classes\\Directory\\shell\\MyFiles\\command', '/ve', '/d', launchCmd, '/f']);
+          await runReg(['add', 'HKCU\\Software\\Classes\\Directory\\shell', '/ve', '/d', 'MyFiles', '/f']);
+
+          await runReg(['add', 'HKCU\\Software\\Classes\\Drive\\shell\\MyFiles', '/ve', '/d', 'Open in MyFiles', '/f']);
+          await runReg(['add', 'HKCU\\Software\\Classes\\Drive\\shell\\MyFiles\\command', '/ve', '/d', launchCmd, '/f']);
+          await runReg(['add', 'HKCU\\Software\\Classes\\Drive\\shell', '/ve', '/d', 'MyFiles', '/f']);
+
+          res.end(JSON.stringify({ success: true }));
         } catch (err) {
           res.end(JSON.stringify({ success: false, error: err.message }));
         }
@@ -733,11 +746,15 @@ server = http.createServer(async (req, res) => {
       // 27. Restore Windows Explorer Default
       if (pathname === '/api/restore-default' && req.method === 'POST') {
         try {
-          const script = path.join(__dirname, 'scripts', 'restore-windows-explorer.bat');
-          exec(`cmd.exe /c "${script.replace(/"/g, '""')}"`, (err) => {
-            if (err) res.end(JSON.stringify({ success: false, error: err.message }));
-            else res.end(JSON.stringify({ success: true }));
-          });
+          const { execFile } = require('child_process');
+          const runReg = (args) => new Promise((resolve) => execFile('reg.exe', args, () => resolve()));
+
+          await runReg(['delete', 'HKCU\\Software\\Classes\\Directory\\shell', '/ve', '/f']);
+          await runReg(['delete', 'HKCU\\Software\\Classes\\Directory\\shell\\MyFiles', '/f']);
+          await runReg(['delete', 'HKCU\\Software\\Classes\\Drive\\shell', '/ve', '/f']);
+          await runReg(['delete', 'HKCU\\Software\\Classes\\Drive\\shell\\MyFiles', '/f']);
+
+          res.end(JSON.stringify({ success: true }));
         } catch (err) {
           res.end(JSON.stringify({ success: false, error: err.message }));
         }

@@ -710,36 +710,54 @@ ipcMain.handle('open-terminal', async (_event, dirPath, terminalChoice = 'wt') =
   }
 });
 
+function runRegCommand(args) {
+  return new Promise((resolve) => {
+    const { execFile } = require('child_process');
+    execFile('reg.exe', args, (err, stdout, stderr) => {
+      resolve({ success: !err, error: err ? (stderr || err.message) : null });
+    });
+  });
+}
+
 // IPC: Register Default File Manager
 ipcMain.handle('make-default', async () => {
-  return new Promise((resolve) => {
-    try {
-      const script = path.join(__dirname, 'scripts', 'register-default-file-manager.bat');
-      const { exec } = require('child_process');
-      exec(`cmd.exe /c "${script.replace(/"/g, '""')}"`, (err) => {
-        if (err) resolve({ success: false, error: err.message });
-        else resolve({ success: true });
-      });
-    } catch (err) {
-      resolve({ success: false, error: err.message });
+  try {
+    let launchCmd;
+    if (app.isPackaged) {
+      launchCmd = `"${process.execPath}" "%1"`;
+    } else {
+      const appDir = path.resolve(__dirname);
+      launchCmd = `"${process.execPath}" "${appDir}" "%1"`;
     }
-  });
+
+    // Register Directory / Folder shell association in HKCU
+    await runRegCommand(['add', 'HKCU\\Software\\Classes\\Directory\\shell\\MyFiles', '/ve', '/d', 'Open in MyFiles', '/f']);
+    await runRegCommand(['add', 'HKCU\\Software\\Classes\\Directory\\shell\\MyFiles\\command', '/ve', '/d', launchCmd, '/f']);
+    await runRegCommand(['add', 'HKCU\\Software\\Classes\\Directory\\shell', '/ve', '/d', 'MyFiles', '/f']);
+
+    // Register Drive shell association in HKCU
+    await runRegCommand(['add', 'HKCU\\Software\\Classes\\Drive\\shell\\MyFiles', '/ve', '/d', 'Open in MyFiles', '/f']);
+    await runRegCommand(['add', 'HKCU\\Software\\Classes\\Drive\\shell\\MyFiles\\command', '/ve', '/d', launchCmd, '/f']);
+    await runRegCommand(['add', 'HKCU\\Software\\Classes\\Drive\\shell', '/ve', '/d', 'MyFiles', '/f']);
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 // IPC: Restore Windows Explorer Default
 ipcMain.handle('restore-default', async () => {
-  return new Promise((resolve) => {
-    try {
-      const script = path.join(__dirname, 'scripts', 'restore-windows-explorer.bat');
-      const { exec } = require('child_process');
-      exec(`cmd.exe /c "${script.replace(/"/g, '""')}"`, (err) => {
-        if (err) resolve({ success: false, error: err.message });
-        else resolve({ success: true });
-      });
-    } catch (err) {
-      resolve({ success: false, error: err.message });
-    }
-  });
+  try {
+    // Delete default verbs and MyFiles keys (safe to ignore if absent)
+    await runRegCommand(['delete', 'HKCU\\Software\\Classes\\Directory\\shell', '/ve', '/f']);
+    await runRegCommand(['delete', 'HKCU\\Software\\Classes\\Directory\\shell\\MyFiles', '/f']);
+    await runRegCommand(['delete', 'HKCU\\Software\\Classes\\Drive\\shell', '/ve', '/f']);
+    await runRegCommand(['delete', 'HKCU\\Software\\Classes\\Drive\\shell\\MyFiles', '/f']);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 // IPC: Launch Native Windows Tool
