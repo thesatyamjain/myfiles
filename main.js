@@ -54,10 +54,18 @@ function extractPathArg(argv) {
   const args = argv.slice(1);
   for (const arg of args) {
     if (!arg || arg === '.' || arg.startsWith('--')) continue;
-    const clean = arg.replace(/^"|"$/g, '').trim();
+    let clean = arg.replace(/^"|"$/g, '').trim();
+    if (clean.toLowerCase().startsWith('/select,')) {
+      clean = clean.substring(8).replace(/^"|"$/g, '').trim();
+    }
     try {
-      if (fs.existsSync(clean) && fs.statSync(clean).isDirectory()) {
-        return clean;
+      if (fs.existsSync(clean)) {
+        const stat = fs.statSync(clean);
+        if (stat.isDirectory()) {
+          return { targetPath: clean, selectItem: null };
+        } else {
+          return { targetPath: path.dirname(clean), selectItem: path.basename(clean) };
+        }
       }
     } catch {}
   }
@@ -80,7 +88,16 @@ if (!gotTheLock) {
   });
 }
 
-function createWindow(initialPath = null) {
+function createWindow(initialTarget = null) {
+  let targetPath = null;
+  let selectItem = null;
+  if (typeof initialTarget === 'string') {
+    targetPath = initialTarget;
+  } else if (initialTarget && typeof initialTarget === 'object') {
+    targetPath = initialTarget.targetPath || initialTarget.path || null;
+    selectItem = initialTarget.selectItem || initialTarget.select || null;
+  }
+
   const existingWindows = BrowserWindow.getAllWindows();
   let x, y;
   if (existingWindows.length > 0) {
@@ -112,8 +129,8 @@ function createWindow(initialPath = null) {
 
   const webContentsId = win.webContents.id;
   windows.add(win);
-  if (initialPath) {
-    windowInitialPaths.set(webContentsId, initialPath);
+  if (targetPath) {
+    windowInitialPaths.set(webContentsId, { targetPath, selectItem });
   }
 
   win.on('closed', () => {
@@ -124,8 +141,12 @@ function createWindow(initialPath = null) {
     }
   });
 
-  if (initialPath) {
-    win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { path: initialPath } });
+  const query = {};
+  if (targetPath) query.path = targetPath;
+  if (selectItem) query.select = selectItem;
+
+  if (targetPath) {
+    win.loadFile(path.join(__dirname, 'src', 'index.html'), { query });
   } else {
     win.loadFile(path.join(__dirname, 'src', 'index.html'));
   }

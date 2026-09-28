@@ -1287,12 +1287,21 @@
     
     // Check command-line argument, shell verb invocation, or URL search param
     let initialPath = null;
+    let initialSelect = null;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('path')) {
       initialPath = urlParams.get('path');
+      initialSelect = urlParams.get('select');
     } else if (api.getInitialPath) {
-      initialPath = await api.getInitialPath();
+      const init = await api.getInitialPath();
+      if (typeof init === 'object' && init !== null) {
+        initialPath = init.targetPath || init.path;
+        initialSelect = init.selectItem || init.select;
+      } else {
+        initialPath = init;
+      }
     }
+    if (initialSelect) state.pendingSelect = initialSelect;
 
     if (!initialPath) {
       const startupPref = state.startupFolder || 'firstDrive';
@@ -1678,7 +1687,11 @@
     const cachedScroll = state.historyScrollMap.get(res.currentPath);
     let targetSelectIdx = -1;
 
-    if (state.lastExitedFolder) {
+    if (state.pendingSelect) {
+      const targetName = state.pendingSelect.toLowerCase();
+      targetSelectIdx = state.items.findIndex(it => it.name && it.name.toLowerCase() === targetName);
+      state.pendingSelect = null;
+    } else if (state.lastExitedFolder) {
       const exitedNorm = state.lastExitedFolder.replace(/[/\\]+$/, '').toLowerCase();
       targetSelectIdx = state.items.findIndex(it => it.path && it.path.replace(/[/\\]+$/, '').toLowerCase() === exitedNorm);
       state.lastExitedFolder = null;
