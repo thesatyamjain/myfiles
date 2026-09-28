@@ -1800,6 +1800,10 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(!serverCode.includes('restore-windows-explorer.bat'), 'server.js must not depend on external .bat files for restore-default');
   assert(mainCode.includes("runRegCommand(['add', 'HKCU\\\\Software\\\\Classes\\\\Directory\\\\shell\\\\MyFiles'"), 'main.js must add Directory shell registry key directly');
   assert(mainCode.includes("runRegCommand(['add', 'HKCU\\\\Software\\\\Classes\\\\Drive\\\\shell\\\\MyFiles'"), 'main.js must add Drive shell registry key directly');
+  assert(mainCode.includes("ipcMain.handle('is-default'"), 'main.js must handle is-default query');
+  assert(serverCode.includes("pathname === '/api/is-default'"), 'server.js must handle /api/is-default route');
+  assert(updatedRenderer.includes('updateDefaultFileManagerButtons'), 'renderer.js must implement updateDefaultFileManagerButtons');
+  assert(updatedIndex.includes('id="settingsBtnRestoreDefault" style="display: none;'), 'index.html must hide settingsBtnRestoreDefault initially to prevent both buttons showing at once');
   console.log('✓ Default Windows File Manager Registry Integration Suite verified');
 
   console.log('\nAll MyFiles self-checks passed successfully!');

@@ -102,6 +102,7 @@ contextBridge.exposeInMainWorld('myFilesAPI', {
   // Shell Verb / Default File Manager Integration
   makeDefaultFileManager: () => ipcRenderer.invoke('make-default'),
   restoreDefaultFileManager: () => ipcRenderer.invoke('restore-default'),
+  isDefaultFileManager: () => ipcRenderer.invoke('is-default'),
 
   // Over-The-Air (OTA) Updates
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),

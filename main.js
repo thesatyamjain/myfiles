@@ -820,6 +820,18 @@ ipcMain.handle('restore-default', async () => {
   }
 });
 
+// IPC: Check Default File Manager Status
+ipcMain.handle('is-default', async () => {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') return resolve({ success: true, isDefault: false });
+    const { execFile } = require('child_process');
+    execFile('reg.exe', ['query', 'HKCU\\Software\\Classes\\Directory\\shell', '/ve'], (err, stdout) => {
+      const isDefault = !err && !!(stdout && stdout.toLowerCase().includes('myfiles'));
+      resolve({ success: true, isDefault });
+    });
+  });
+});
+
 // IPC: Launch Native Windows Tool
 ipcMain.handle('launch-windows-tool', async (_event, toolName, driveLetter) => {
   try {

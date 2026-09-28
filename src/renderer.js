@@ -96,6 +96,7 @@
     setAttributes: (path, attrs) => fetch(`${SERVER_ORIGIN}/api/set-attributes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path, ...attrs }) }).then(r => r.json()),
     makeDefaultFileManager: () => (window.myFilesAPI && window.myFilesAPI.makeDefaultFileManager ? window.myFilesAPI.makeDefaultFileManager() : fetch(`${SERVER_ORIGIN}/api/make-default`, { method: 'POST' }).then(r => r.json())),
     restoreDefaultFileManager: () => (window.myFilesAPI && window.myFilesAPI.restoreDefaultFileManager ? window.myFilesAPI.restoreDefaultFileManager() : fetch(`${SERVER_ORIGIN}/api/restore-default`, { method: 'POST' }).then(r => r.json())),
+    isDefaultFileManager: () => (window.myFilesAPI && window.myFilesAPI.isDefaultFileManager ? window.myFilesAPI.isDefaultFileManager() : fetch(`${SERVER_ORIGIN}/api/is-default`).then(r => r.json())),
     openExternal: (url) => (window.myFilesAPI && window.myFilesAPI.openExternal ? window.myFilesAPI.openExternal(url) : window.open(url, '_blank')),
     getLocalIp: () => (window.myFilesAPI && window.myFilesAPI.getLocalIp ? window.myFilesAPI.getLocalIp() : fetch(`${SERVER_ORIGIN}/api/local-ip`).then(r => r.json()).then(d => d.ip || '127.0.0.1')),
     openNativeShare: (p) => (window.myFilesAPI && window.myFilesAPI.openNativeShare ? window.myFilesAPI.openNativeShare(p) : null),
@@ -128,6 +129,9 @@
     // VLC Media Integration State
     vlcInstalled: false,
     vlcPath: null,
+
+    // Default File Manager State
+    isDefaultFileManager: false,
 
     // Primary Pane State
     currentPath: 'C:\\',
@@ -1280,6 +1284,7 @@
     applyGear(state.currentGear || 2, true);
     await loadInitialData();
     applySidebarPreferences();
+    refreshDefaultFileManagerStatus();
 
     // Ensure sidebar is ALWAYS open and fully expanded by default
     if (el.mainLayout) {
@@ -6830,9 +6835,38 @@
     });
   }
 
+  function updateDefaultFileManagerButtons(isDefault) {
+    state.isDefaultFileManager = !!isDefault;
+    if (el.settingsBtnDefault && el.settingsBtnRestoreDefault) {
+      if (state.isDefaultFileManager) {
+        el.settingsBtnDefault.style.display = 'none';
+        el.settingsBtnRestoreDefault.style.display = 'inline-block';
+      } else {
+        el.settingsBtnDefault.style.display = 'inline-block';
+        el.settingsBtnRestoreDefault.style.display = 'none';
+      }
+    }
+  }
+
+  async function refreshDefaultFileManagerStatus() {
+    if (!el.settingsBtnDefault || !el.settingsBtnRestoreDefault) return;
+    try {
+      if (api.isDefaultFileManager) {
+        const res = await api.isDefaultFileManager();
+        if (res && typeof res.isDefault === 'boolean') {
+          updateDefaultFileManagerButtons(res.isDefault);
+        }
+      }
+    } catch {
+      // Non-fatal, retain current UI state
+    }
+  }
+
   function openSettingsModal() {
     if (!el.settingsModal) return;
     el.settingsModal.style.display = 'flex';
+    updateDefaultFileManagerButtons(state.isDefaultFileManager);
+    refreshDefaultFileManagerStatus();
 
     try {
       updateSettingsThemeCtrl();
@@ -10062,6 +10096,9 @@
           Object.entries(panels).forEach(([name, panelEl]) => {
             if (panelEl) panelEl.classList.toggle('active', name === targetTab);
           });
+          if (targetTab === 'system') {
+            refreshDefaultFileManagerStatus();
+          }
         });
       });
     }
@@ -10236,6 +10273,7 @@
         try {
           const res = await api.makeDefaultFileManager();
           if (res && res.success) {
+            updateDefaultFileManagerButtons(true);
             showToast('MyFiles registered as default file manager!', 'success', 5000);
           } else {
             showToast(`Registration failed: ${res?.error || 'Unknown error'}`, 'error', 5000);
@@ -10258,6 +10296,7 @@
         try {
           const res = await api.restoreDefaultFileManager();
           if (res && res.success) {
+            updateDefaultFileManagerButtons(false);
             showToast('Windows Explorer restored as default file manager!', 'success', 5000);
           } else {
             showToast(`Restore failed: ${res?.error || 'Unknown error'}`, 'error', 5000);

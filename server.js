@@ -761,6 +761,20 @@ server = http.createServer(async (req, res) => {
         return;
       }
 
+      // 28. Check Default File Manager Status
+      if (pathname === '/api/is-default' && req.method === 'GET') {
+        if (process.platform !== 'win32') {
+          res.end(JSON.stringify({ success: true, isDefault: false }));
+          return;
+        }
+        const { execFile } = require('child_process');
+        execFile('reg.exe', ['query', 'HKCU\\Software\\Classes\\Directory\\shell', '/ve'], (err, stdout) => {
+          const isDefault = !err && !!(stdout && stdout.toLowerCase().includes('myfiles'));
+          res.end(JSON.stringify({ success: true, isDefault }));
+        });
+        return;
+      }
+
       // 27b. Launch Native Windows Tool API
       if (pathname === '/api/launch-windows-tool' && req.method === 'POST') {
         try {
