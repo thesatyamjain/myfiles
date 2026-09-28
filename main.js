@@ -11,6 +11,8 @@ const storage = require('./storage');
 const fsEngine = require('./fs-engine');
 
 let mainWindow = null;
+const windows = new Set();
+const windowInitialPaths = new Map();
 const activeSearches = new Map();
 
 // Configuration directory
@@ -62,30 +64,41 @@ function extractPathArg(argv) {
   return null;
 }
 
-let initialTargetPath = extractPathArg(process.argv);
+const initialTargetPath = extractPathArg(process.argv);
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', (_event, commandLine) => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-      const target = extractPathArg(commandLine);
-      if (target) {
-        mainWindow.webContents.send('open-directory-tab', target);
-      }
+    const target = extractPathArg(commandLine);
+    const win = createWindow(target);
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
     }
   });
 }
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
+function createWindow(initialPath = null) {
+  const existingWindows = BrowserWindow.getAllWindows();
+  let x, y;
+  if (existingWindows.length > 0) {
+    const active = BrowserWindow.getFocusedWindow() || existingWindows[existingWindows.length - 1];
+    if (active) {
+      const [lastX, lastY] = active.getPosition();
+      x = lastX + 32;
+      y = lastY + 32;
+    }
+  }
+
+  const win = new BrowserWindow({
     width: 1320,
     height: 860,
     minWidth: 900,
     minHeight: 560,
+    x,
+    y,
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#0f172a',
@@ -97,19 +110,39 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+  windows.add(win);
+  if (initialPath) {
+    windowInitialPaths.set(win.webContents.id, initialPath);
+  }
 
-  mainWindow.on('maximize', () => {
-    mainWindow.webContents.send('window-state', { isMaximized: true });
+  win.on('closed', () => {
+    windows.delete(win);
+    windowInitialPaths.delete(win.webContents.id);
+    if (mainWindow === win) {
+      mainWindow = windows.size > 0 ? Array.from(windows)[0] : null;
+    }
   });
 
-  mainWindow.on('unmaximize', () => {
-    mainWindow.webContents.send('window-state', { isMaximized: false });
+  if (initialPath) {
+    win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { path: initialPath } });
+  } else {
+    win.loadFile(path.join(__dirname, 'src', 'index.html'));
+  }
+
+  win.on('maximize', () => {
+    win.webContents.send('window-state', { isMaximized: true });
   });
+
+  win.on('unmaximize', () => {
+    win.webContents.send('window-state', { isMaximized: false });
+  });
+
+  mainWindow = win;
+  return win;
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  createWindow(initialTargetPath);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -121,30 +154,43 @@ app.on('window-all-closed', () => {
 });
 
 // IPC: Initial directory path passed from command line / shell association
-ipcMain.handle('get-initial-path', () => {
+ipcMain.handle('get-initial-path', (event) => {
+  if (event && event.sender && windowInitialPaths.has(event.sender.id)) {
+    const p = windowInitialPaths.get(event.sender.id);
+    windowInitialPaths.delete(event.sender.id);
+    return p;
+  }
   return initialTargetPath;
 });
 
+// IPC: Multi-Window Creation
+ipcMain.handle('open-new-window', (_event, targetPath) => {
+  createWindow(targetPath || null);
+  return { success: true };
+});
+
 // IPC: Window controls
-ipcMain.handle('window-control', (_event, action) => {
-  if (!mainWindow) return;
+ipcMain.handle('window-control', (event, action) => {
+  const win = (event && event.sender && BrowserWindow.fromWebContents(event.sender)) || BrowserWindow.getFocusedWindow() || mainWindow;
+  if (!win) return false;
   switch (action) {
     case 'minimize':
-      mainWindow.minimize();
+      win.minimize();
       break;
     case 'maximize':
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
+      if (win.isMaximized()) {
+        win.unmaximize();
       } else {
-        mainWindow.maximize();
+        win.maximize();
       }
       break;
     case 'close':
-      mainWindow.close();
+      win.close();
       break;
     case 'isMaximized':
-      return mainWindow.isMaximized();
+      return win.isMaximized();
   }
+  return true;
 });
 
 // IPC: Drives Detection

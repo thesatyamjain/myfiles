@@ -1664,7 +1664,18 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(missingFromHtml.length === 0, `All static DOM IDs queried in renderer.js must exist in index.html: ${missingFromHtml.join(', ')}`);
   console.log('✓ DOM Integrity & Element ID Parity (All elements in app) verified');
 
-  // 49. Dual Runtime API Parity Check (Electron IPC & Server REST)
+  // 49. Multi-Window Desktop Architecture & Keyboard Parity Check
+  assert(mainSrc.includes("ipcMain.handle('open-new-window'"), 'main.js must implement open-new-window IPC handler');
+  assert(preloadSrc.includes("openNewWindow:"), 'preload.js must expose openNewWindow API');
+  assert(mainSrc.includes("BrowserWindow.fromWebContents(event.sender)"), 'main.js must support per-window controls via event.sender');
+  assert(updatedRenderer.includes("openNewWindow(state.currentPath)"), 'renderer.js must wire openNewWindow invocation');
+  assert(updatedRenderer.includes("btnNewWindow"), 'renderer.js must reference btnNewWindow');
+  assert(updatedIndex.includes('id="btnNewWindow"'), 'index.html must include btnNewWindow in titlebar');
+  assert(updatedIndex.includes('id="ctxOpenNewWindow"'), 'index.html must include ctxOpenNewWindow in context menu');
+  assert(updatedRenderer.includes('data-action="open-window"'), 'renderer.js must support open in new window in tab context menu');
+  console.log('✓ Multi-Window Desktop Architecture (Ctrl+N, Tab Detach & Per-Window IPC) verified');
+
+  // 50. Dual Runtime API Parity Check (Electron IPC & Server REST)
   const mainHandles = Array.from(mainSrc.matchAll(/ipcMain\.handle\('([^']+)'/g)).map(m => m[1]);
   const missingIpc = mainHandles.filter(h => !preloadSrc.includes(h));
   assert(missingIpc.length === 0, `All main.js IPC handlers must be exposed in preload.js: ${missingIpc.join(', ')}`);

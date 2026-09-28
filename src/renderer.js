@@ -101,6 +101,12 @@
     openNativeShare: (p) => (window.myFilesAPI && window.myFilesAPI.openNativeShare ? window.myFilesAPI.openNativeShare(p) : null),
     getInstalledShareApps: (force) => (window.myFilesAPI && window.myFilesAPI.getInstalledShareApps ? window.myFilesAPI.getInstalledShareApps(force) : fetch(`${SERVER_ORIGIN}/api/installed-share-apps${force ? '?force=1' : ''}`).then(r => r.json()).catch(() => ({}))),
     launchShareApp: (appKey, p) => (window.myFilesAPI && window.myFilesAPI.launchShareApp ? window.myFilesAPI.launchShareApp(appKey, p) : fetch(`${SERVER_ORIGIN}/api/launch-share-app`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appKey, targetPath: p }) }).then(r => r.json()).catch(() => ({}))),
+    openNewWindow: (p) => {
+      if (window.myFilesAPI && window.myFilesAPI.openNewWindow) return window.myFilesAPI.openNewWindow(p);
+      const url = p ? `/?path=${encodeURIComponent(p)}` : '/';
+      window.open(url, '_blank');
+      return Promise.resolve({ success: true });
+    },
     windowControl: (action) => {
       if (action === 'close') window.close();
     }
@@ -702,6 +708,7 @@
     // Tabs & Layout
     tabsContainer: document.getElementById('tabsContainer'),
     btnNewTab: document.getElementById('btnNewTab'),
+    btnNewWindow: document.getElementById('btnNewWindow'),
     btnToggleDualPane: document.getElementById('btnToggleDualPane'),
     splitPaneLabel: document.getElementById('splitPaneLabel'),
     panesContainer: document.getElementById('panesContainer'),
@@ -857,6 +864,8 @@
     // Context Menu
     contextMenu: document.getElementById('contextMenu'),
     ctxOpen: document.getElementById('ctxOpen'),
+    ctxOpenNewWindow: document.getElementById('ctxOpenNewWindow'),
+    ctxOpenNewTab: document.getElementById('ctxOpenNewTab'),
     ctxQuickLook: document.getElementById('ctxQuickLook'),
     ctxVlcDivider: document.getElementById('ctxVlcDivider'),
     ctxVlcPlay: document.getElementById('ctxVlcPlay'),
@@ -1383,7 +1392,23 @@
     el.btnWinClose.addEventListener('click', () => api.windowControl('close'));
   }
 
-  // --- TABS SYSTEM ---
+  // --- MULTI-WINDOW & TABS SYSTEM ---
+  async function openNewWindow(targetPath) {
+    const p = targetPath || state.currentPath || 'C:\\';
+    try {
+      if (api.openNewWindow) {
+        await api.openNewWindow(p);
+      } else {
+        const url = `/?path=${encodeURIComponent(p)}`;
+        window.open(url, '_blank');
+      }
+    } catch (err) {
+      console.error('Failed to open new window:', err);
+      const url = `/?path=${encodeURIComponent(p)}`;
+      window.open(url, '_blank');
+    }
+  }
+
   function createTab(dirPath) {
     const tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
     const newTab = {
@@ -1483,6 +1508,18 @@
         </span>
         <span>New Tab</span>
       </div>
+      <div class="ctx-item" data-action="open-window">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </span>
+        <span>Open in New Window</span>
+      </div>
+      <div class="ctx-item ${!canClose ? 'disabled' : ''}" data-action="move-window">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </span>
+        <span>Move to New Window</span>
+      </div>
       <div class="ctx-item" data-action="duplicate">
         <span class="ctx-icon">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -1511,8 +1548,8 @@
     `;
 
     menu.style.display = 'flex';
-    const menuWidth = 195;
-    const menuHeight = 175;
+    const menuWidth = 205;
+    const menuHeight = 245;
     let posX = x;
     let posY = y;
     if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 8;
@@ -1529,6 +1566,13 @@
 
         if (action === 'new') {
           createTab(state.currentPath);
+        } else if (action === 'open-window') {
+          openNewWindow(tab.path);
+        } else if (action === 'move-window') {
+          openNewWindow(tab.path);
+          if (state.tabs.length > 1) {
+            closeTab(tab.id);
+          }
         } else if (action === 'duplicate') {
           createTab(tab.path);
         } else if (action === 'copy-path') {
@@ -5980,6 +6024,8 @@
 
     // 2. Primary Item Actions (Open, Quick Look, Get Info, Share)
     if (el.ctxOpen) el.ctxOpen.style.display = hasTarget ? 'flex' : 'none';
+    if (el.ctxOpenNewWindow) el.ctxOpenNewWindow.style.display = isDir ? 'flex' : 'none';
+    if (el.ctxOpenNewTab) el.ctxOpenNewTab.style.display = isDir ? 'flex' : 'none';
     if (el.ctxQuickLook) el.ctxQuickLook.style.display = isFile ? 'flex' : 'none';
     if (el.ctxGetInfo) el.ctxGetInfo.style.display = hasTarget ? 'flex' : 'none';
     if (el.ctxShare) el.ctxShare.style.display = hasTarget ? 'flex' : 'none';
@@ -6088,6 +6134,8 @@
       if (el.ctxEmptyRecycle) el.ctxEmptyRecycle.style.display = !hasTarget ? 'flex' : 'none';
 
       if (el.ctxOpen) el.ctxOpen.style.display = 'none';
+      if (el.ctxOpenNewWindow) el.ctxOpenNewWindow.style.display = 'none';
+      if (el.ctxOpenNewTab) el.ctxOpenNewTab.style.display = 'none';
       if (el.ctxCut) el.ctxCut.style.display = 'none';
       if (el.ctxCopy) el.ctxCopy.style.display = 'none';
       if (el.ctxDuplicate) el.ctxDuplicate.style.display = 'none';
@@ -8610,6 +8658,7 @@
 
     // Ribbon Actions
     el.btnNewTab.addEventListener('click', () => createTab(state.currentPath));
+    if (el.btnNewWindow) el.btnNewWindow.addEventListener('click', () => openNewWindow(state.currentPath));
     if (el.tabsContainer) {
       el.tabsContainer.addEventListener('dblclick', (e) => {
         if (e.target.closest('.tab-item, .tab-close, button, input')) return;
@@ -8633,7 +8682,13 @@
       item.addEventListener('click', (e) => {
         e.stopPropagation();
         el.newFileDropdown.classList.remove('open');
-        promptCreateFile(item.dataset.template);
+        if (item.dataset.action === 'new-window') {
+          openNewWindow(state.currentPath);
+        } else if (item.dataset.action === 'new-tab') {
+          createTab(state.currentPath);
+        } else {
+          promptCreateFile(item.dataset.template);
+        }
       });
     });
 
@@ -10109,6 +10164,22 @@
         else api.openItem(state.contextTarget.path);
       }
     });
+    if (el.ctxOpenNewWindow) {
+      el.ctxOpenNewWindow.addEventListener('click', () => {
+        hideContextMenu();
+        if (state.contextTarget && state.contextTarget.isDirectory) {
+          openNewWindow(state.contextTarget.path);
+        }
+      });
+    }
+    if (el.ctxOpenNewTab) {
+      el.ctxOpenNewTab.addEventListener('click', () => {
+        hideContextMenu();
+        if (state.contextTarget && state.contextTarget.isDirectory) {
+          createTab(state.contextTarget.path);
+        }
+      });
+    }
     el.ctxQuickLook.addEventListener('click', () => {
       hideContextMenu();
       if (state.contextTarget) openQuickLook(state.contextTarget);
@@ -11193,7 +11264,12 @@
         return;
       }
 
-      // Tab Shortcuts
+      // Window & Tab Shortcuts
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        openNewWindow(state.currentPath);
+        return;
+      }
       if (e.ctrlKey && e.key.toLowerCase() === 't') {
         e.preventDefault();
         createTab(state.currentPath);

@@ -82,6 +82,7 @@ contextBridge.exposeInMainWorld('myFilesAPI', {
   launchWindowsTool: (tool, drive) => ipcRenderer.invoke('launch-windows-tool', tool, drive),
 
   // Window Controls
+  openNewWindow: (targetPath) => ipcRenderer.invoke('open-new-window', targetPath),
   windowControl: (action) => ipcRenderer.invoke('window-control', action),
   onWindowStateChange: (callback) => {
     const sub = (_event, state) => callback(state);
