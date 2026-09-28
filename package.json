@@ -30,6 +30,7 @@
     "appId": "com.andruia.myfiles",
     "productName": "MyFiles",
     "npmRebuild": false,
+    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "dist"
     },
@@ -39,6 +40,9 @@
       "server.js",
       "storage.js",
       "fs-engine.js",
+      "archive.js",
+      "vlc.js",
+      "dedup.js",
       "src/**/*",
       "assets/**/*",
       "package.json"

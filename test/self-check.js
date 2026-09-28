@@ -1780,6 +1780,17 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert.strictEqual(formatDriveEval({ label: 'Samsung SSD', letter: 'F' }), 'Samsung SSD (F:)', 'Must format custom drive names cleanly');
   console.log('✓ Drive Display Name Formatting & Non-Duplication Suite verified');
 
+  // 53. Package Build Configuration & ASAR Module Integrity Suite
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const buildPkgData = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  const buildFiles = buildPkgData.build && buildPkgData.build.files;
+  assert(Array.isArray(buildFiles), 'package.json must contain build.files array');
+  const requiredModules = ['archive.js', 'vlc.js', 'dedup.js', 'storage.js', 'fs-engine.js', 'main.js', 'preload.js'];
+  for (const mod of requiredModules) {
+    assert(buildFiles.includes(mod) || buildFiles.includes('*.js'), `package.json build.files must include ${mod} to prevent runtime missing module errors in packaged app`);
+  }
+  console.log('✓ Packaging Build Configuration & ASAR Module Integrity Suite verified');
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);
