@@ -3676,14 +3676,16 @@
     }
 
     function appendRows(itemsList, depth = 0, targetParent = container) {
+      const frag = document.createDocumentFragment();
       itemsList.forEach((item) => {
         const row = createListRowElement(item, depth);
-        targetParent.appendChild(row);
+        frag.appendChild(row);
         if (item.isDirectory && state.expandedFolders.has(item.path)) {
           const children = state.expandedFolders.get(item.path) || [];
-          appendRows(children, depth + 1, targetParent);
+          appendRows(children, depth + 1, frag);
         }
       });
+      targetParent.appendChild(frag);
     }
 
     const grouped = getGroupedItems(state.items, state.groupBy);
@@ -3881,9 +3883,11 @@
         groupGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(var(--grid-card-size, 108px), 1fr))';
         groupGrid.style.gap = 'var(--grid-card-gap, 14px)';
 
+        const groupFrag = document.createDocumentFragment();
         group.items.forEach(({ item, index }) => {
-          groupGrid.appendChild(createGridItemElement(item, index));
+          groupFrag.appendChild(createGridItemElement(item, index));
         });
+        groupGrid.appendChild(groupFrag);
 
         section.appendChild(groupGrid);
         wrapper.appendChild(section);
@@ -3899,9 +3903,11 @@
       container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(var(--grid-card-size, 108px), 1fr))';
       container.style.gap = 'var(--grid-card-gap, 14px)';
 
+      const frag = document.createDocumentFragment();
       state.items.forEach((item, idx) => {
-        container.appendChild(createGridItemElement(item, idx));
+        frag.appendChild(createGridItemElement(item, idx));
       });
+      container.appendChild(frag);
 
       el.primaryViewport.appendChild(container);
       container.scrollTop = 0;

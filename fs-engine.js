@@ -184,44 +184,49 @@ async function readDirectory(targetPath) {
   try {
     const dirents = await fs.promises.readdir(resolved, { withFileTypes: true });
     const items = [];
+    const CHUNK_SIZE = 64;
 
-    for (const d of dirents) {
-      const fullPath = path.join(resolved, d.name);
-      let isDir = d.isDirectory();
-      let isFile = d.isFile();
-      let size = 0;
-      let mtime = null;
-      let birthtime = null;
-      let atime = null;
-      let isReadOnly = false;
+    for (let i = 0; i < dirents.length; i += CHUNK_SIZE) {
+      const chunk = dirents.slice(i, i + CHUNK_SIZE);
+      const chunkResults = await Promise.all(chunk.map(async (d) => {
+        const fullPath = path.join(resolved, d.name);
+        let isDir = d.isDirectory();
+        let isFile = d.isFile();
+        let size = 0;
+        let mtime = null;
+        let birthtime = null;
+        let atime = null;
+        let isReadOnly = false;
 
-      try {
-        const stats = await fs.promises.stat(fullPath);
-        size = stats.size;
-        mtime = stats.mtime;
-        birthtime = stats.birthtime;
-        atime = stats.atime;
-        isDir = stats.isDirectory();
-        isFile = stats.isFile();
-        isReadOnly = !(stats.mode & 0o200);
-      } catch {
-        // Keep dirent attributes on permission or symlink error
-      }
+        try {
+          const stats = await fs.promises.stat(fullPath);
+          size = stats.size;
+          mtime = stats.mtime;
+          birthtime = stats.birthtime;
+          atime = stats.atime;
+          isDir = stats.isDirectory();
+          isFile = stats.isFile();
+          isReadOnly = !(stats.mode & 0o200);
+        } catch {
+          // Keep dirent attributes on permission or symlink error
+        }
 
-      const ext = isDir ? '' : path.extname(d.name).toLowerCase();
-      items.push({
-        name: d.name,
-        path: fullPath,
-        isDirectory: isDir,
-        isFile: isFile,
-        size,
-        mtime: mtime ? mtime.toISOString() : null,
-        birthtime: birthtime ? birthtime.toISOString() : (mtime ? mtime.toISOString() : null),
-        atime: atime ? atime.toISOString() : (mtime ? mtime.toISOString() : null),
-        isReadOnly,
-        extension: ext,
-        isHidden: d.name.startsWith('.') || d.name.startsWith('~') || d.name.endsWith('~') || d.name.includes('~lock~') || d.name.startsWith('$')
-      });
+        const ext = isDir ? '' : path.extname(d.name).toLowerCase();
+        return {
+          name: d.name,
+          path: fullPath,
+          isDirectory: isDir,
+          isFile: isFile,
+          size,
+          mtime: mtime ? mtime.toISOString() : null,
+          birthtime: birthtime ? birthtime.toISOString() : (mtime ? mtime.toISOString() : null),
+          atime: atime ? atime.toISOString() : (mtime ? mtime.toISOString() : null),
+          isReadOnly,
+          extension: ext,
+          isHidden: d.name.startsWith('.') || d.name.startsWith('~') || d.name.endsWith('~') || d.name.includes('~lock~') || d.name.startsWith('$')
+        };
+      }));
+      items.push(...chunkResults);
     }
 
     return {

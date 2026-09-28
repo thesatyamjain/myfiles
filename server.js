@@ -1,4 +1,5 @@
 // MyFiles Desktop Application Server (Zero-Dependency, Native Node.js)
+process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE || '16';
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
