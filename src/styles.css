@@ -374,9 +374,8 @@ body {
 }
 
 .app-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 24px;
+  height: 20px;
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: block;

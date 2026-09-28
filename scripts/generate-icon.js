@@ -6,12 +6,11 @@ app.whenReady().then(async () => {
   const win = new BrowserWindow({
     width: 256,
     height: 256,
-    show: false,
+    show: true,
+    center: true,
     frame: false,
     transparent: true,
-    webPreferences: {
-      offscreen: false
-    }
+    skipTaskbar: true
   });
 
   const svgHtml = `<!DOCTYPE html>
@@ -19,54 +18,47 @@ app.whenReady().then(async () => {
   <head>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: transparent; overflow: hidden; width: 256px; height: 256px; }
-      svg { width: 256px; height: 256px; }
+      body {
+        background: transparent;
+        overflow: hidden;
+        width: 256px;
+        height: 256px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .folder-icon {
+        width: 236px;
+        height: 199px;
+        filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.28));
+      }
     </style>
   </head>
   <body>
-    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg class="folder-icon" viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="finderAppGrad" x1="16" y1="2" x2="16" y2="30" gradientUnits="userSpaceOnUse">
+        <linearGradient id="folderBackGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#0284c7"/>
-          <stop offset="50%" stop-color="#0369a1"/>
-          <stop offset="100%" stop-color="#0c4a6e"/>
+          <stop offset="100%" stop-color="#0369a1"/>
         </linearGradient>
-        <linearGradient id="folderBackGrad" x1="16" y1="7" x2="16" y2="24" gradientUnits="userSpaceOnUse">
+        <linearGradient id="folderFrontGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#38bdf8"/>
           <stop offset="100%" stop-color="#0284c7"/>
         </linearGradient>
-        <linearGradient id="folderFrontGrad" x1="16" y1="13" x2="16" y2="26" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#60a5fa"/>
-          <stop offset="60%" stop-color="#2563eb"/>
-          <stop offset="100%" stop-color="#1d4ed8"/>
-        </linearGradient>
-        <linearGradient id="sheetGrad" x1="15" y1="8" x2="15" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="100%" stop-color="#e2e8f0"/>
-        </linearGradient>
-        <filter id="iconDepthShadow" x="-15%" y="-15%" width="130%" height="135%">
-          <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.32"/>
+        <filter id="folderShadow" x="-20%" y="-20%" width="140%" height="145%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.25"/>
         </filter>
       </defs>
-      <rect x="2" y="2" width="28" height="28" rx="6.5" fill="url(#finderAppGrad)"/>
-      <rect x="2.5" y="2.5" width="27" height="27" rx="6" stroke="rgba(255, 255, 255, 0.15)" stroke-width="0.8" fill="none"/>
-      <path d="M5.5 10c0-1.4 1-2.5 2.5-2.5h4.2c1 0 1.8.6 2.4 1.5l.8 1.2c.4.6 1 .9 1.8.9h6.3c1.5 0 2.5 1.1 2.5 2.5v9.4c0 1.4-1 2.5-2.5 2.5H8c-1.5 0-2.5-1.1-2.5-2.5V10z" fill="url(#folderBackGrad)"/>
-      <rect x="8.5" y="8" width="13" height="12" rx="1.5" fill="#93c5fd" fill-opacity="0.5"/>
-      <g filter="url(#iconDepthShadow)">
-        <path d="M7.5 9.5c0-.8.7-1.5 1.5-1.5h7.2l4.8 4.8v8.7c0 .8-.7 1.5-1.5 1.5H9c-.8 0-1.5-.7-1.5-1.5V9.5z" fill="url(#sheetGrad)"/>
-        <path d="M16.2 8v3.6c0 .7.5 1.2 1.2 1.2h3.6z" fill="#cbd5e1"/>
-        <line x1="9.8" y1="12.5" x2="14.5" y2="12.5" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="9.8" y1="15.2" x2="18.2" y2="15.2" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="9.8" y1="17.9" x2="16" y2="17.9" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
-      </g>
-      <path d="M5 14c0-1.2 1-2.2 2.2-2.2h17.6c1.2 0 2.2 1 2.2 2.2v8.5c0 1.5-1.2 2.7-2.7 2.7H7.7C6.2 25.2 5 24 5 22.5V14z" fill="url(#folderFrontGrad)" filter="url(#iconDepthShadow)"/>
-      <path d="M7.5 12.6h17" stroke="rgba(255, 255, 255, 0.7)" stroke-width="0.8" stroke-linecap="round"/>
-      <g opacity="0.95">
-        <rect x="12" y="15.5" width="8" height="6.5" rx="1.2" stroke="#ffffff" stroke-width="1.2" fill="none"/>
-        <line x1="14" y1="17.8" x2="18" y2="17.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="14" y1="19.8" x2="16.5" y2="19.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-      </g>
-      <path d="M3.5 8c0-3.2 2.2-4.8 5.5-4.8h14c3.3 0 5.5 1.6 5.5 4.8" stroke="rgba(255, 255, 255, 0.35)" stroke-width="0.9" stroke-linecap="round" fill="none"/>
+      <!-- Back plate with curved tab -->
+      <path d="M 4 8 C 4 6.2 5.2 5 7 5 L 14 5 C 15.5 5 16.6 5.8 17.8 7.2 L 19 8.8 C 19.8 9.8 20.8 10.5 22 10.5 L 31.5 10.5 C 33.5 10.5 35 12 35 14 L 35 26 C 35 28.2 33.2 30 31 30 L 8 30 C 5.8 30 4 28.2 4 26 Z" fill="url(#folderBackGrad)"/>
+      <!-- Paper sheet insert -->
+      <rect x="7" y="7.5" width="24" height="13" rx="2" fill="#ffffff" fill-opacity="0.9"/>
+      <line x1="10" y1="11" x2="20" y2="11" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="10" y1="14" x2="16" y2="14" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
+      <!-- Front Flap with depth shadow -->
+      <path d="M 3.5 13.5 C 3.5 11.8 4.8 10.5 6.8 10.5 L 31.2 10.5 C 33.2 10.5 34.5 11.8 34.5 13.5 L 34.5 25.5 C 34.5 27.8 32.8 29.5 30.5 29.5 L 7.5 29.5 C 5.2 29.5 3.5 27.8 3.5 25.5 Z" fill="url(#folderFrontGrad)" filter="url(#folderShadow)"/>
+      <!-- Specular Highlight Top Edge -->
+      <path d="M 6.8 11.2 L 31.2 11.2" stroke="rgba(255, 255, 255, 0.65)" stroke-width="0.85" stroke-linecap="round"/>
     </svg>
   </body>
 </html>`;
@@ -101,7 +93,7 @@ app.whenReady().then(async () => {
     } catch (e) {
       console.error('Failed capturing icon:', e);
     } finally {
-      app.quit();
+      app.exit(0);
     }
-  }, 600);
+  }, 1000);
 });
