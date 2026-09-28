@@ -6,7 +6,11 @@
   "scripts": {
     "start": "electron .",
     "server": "node server.js",
-    "test": "node test/self-check.js"
+    "test": "node test/self-check.js",
+    "build": "npx electron-builder --win nsis portable",
+    "build:installer": "npx electron-builder --win nsis",
+    "build:portable": "npx electron-builder --win portable",
+    "build:dir": "npx electron-builder --dir"
   },
   "keywords": [
     "file-manager",
@@ -19,6 +23,47 @@
   "author": "Antigravity",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^41.2.0"
+    "electron": "44.4.5"
+  },
+  "build": {
+    "appId": "com.andruia.myfiles",
+    "productName": "MyFiles",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "storage.js",
+      "fs-engine.js",
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MyFiles"
+    }
   }
 }
