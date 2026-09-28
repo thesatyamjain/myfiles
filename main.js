@@ -110,14 +110,15 @@ function createWindow(initialPath = null) {
     }
   });
 
+  const webContentsId = win.webContents.id;
   windows.add(win);
   if (initialPath) {
-    windowInitialPaths.set(win.webContents.id, initialPath);
+    windowInitialPaths.set(webContentsId, initialPath);
   }
 
   win.on('closed', () => {
     windows.delete(win);
-    windowInitialPaths.delete(win.webContents.id);
+    windowInitialPaths.delete(webContentsId);
     if (mainWindow === win) {
       mainWindow = windows.size > 0 ? Array.from(windows)[0] : null;
     }
@@ -130,11 +131,15 @@ function createWindow(initialPath = null) {
   }
 
   win.on('maximize', () => {
-    win.webContents.send('window-state', { isMaximized: true });
+    if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('window-state', { isMaximized: true });
+    }
   });
 
   win.on('unmaximize', () => {
-    win.webContents.send('window-state', { isMaximized: false });
+    if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('window-state', { isMaximized: false });
+    }
   });
 
   mainWindow = win;
@@ -171,8 +176,8 @@ ipcMain.handle('open-new-window', (_event, targetPath) => {
 
 // IPC: Window controls
 ipcMain.handle('window-control', (event, action) => {
-  const win = (event && event.sender && BrowserWindow.fromWebContents(event.sender)) || BrowserWindow.getFocusedWindow() || mainWindow;
-  if (!win) return false;
+  const win = (event && event.sender && !event.sender.isDestroyed() && BrowserWindow.fromWebContents(event.sender)) || BrowserWindow.getFocusedWindow() || mainWindow;
+  if (!win || win.isDestroyed()) return false;
   switch (action) {
     case 'minimize':
       win.minimize();
