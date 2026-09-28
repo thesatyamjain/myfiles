@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld('myFilesAPI', {
   storageAnalyze: (options) => ipcRenderer.invoke('storage-analyze', options),
   storageCleanTemp: () => ipcRenderer.invoke('storage-clean-temp'),
   storageEmptyRecycle: (drive) => ipcRenderer.invoke('storage-empty-recycle', drive),
+  emptyRecycleBin: (drive) => ipcRenderer.invoke('storage-empty-recycle', drive),
   openRecycleBin: () => ipcRenderer.invoke('open-recycle-bin'),
   getRecycleStats: () => ipcRenderer.invoke('get-recycle-stats'),
   restoreRecycleItem: (path) => ipcRenderer.invoke('restore-recycle-item', path),

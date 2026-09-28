@@ -402,6 +402,13 @@ server = http.createServer(async (req, res) => {
       // 8. Delete Item (Recycle Bin / Unlink)
       if (pathname === '/api/delete') {
         try {
+          if (process.platform === 'win32' && storage && typeof storage.moveToRecycleBin === 'function') {
+            const recycleRes = await storage.moveToRecycleBin(data.path);
+            if (recycleRes && recycleRes.success) {
+              res.end(JSON.stringify({ success: true, recycled: true }));
+              return;
+            }
+          }
           const stats = await fs.promises.stat(data.path);
           if (stats.isDirectory()) {
             await fs.promises.rm(data.path, { recursive: true, force: true });

@@ -994,6 +994,16 @@ body.theme-light .tool-btn.active {
   margin: 4px 0;
 }
 
+.dropdown-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding: 6px 10px 4px;
+  user-select: none;
+}
+
 .ext-badge {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -2122,6 +2132,124 @@ body.theme-light .list-header {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* --- SORT GROUPING / GROUP BY SUBSYSTEM --- */
+.grouped-grid-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 14px 18px 24px;
+  box-sizing: border-box;
+}
+
+.grouped-grid-wrapper .grid-container {
+  height: auto;
+  overflow-y: visible;
+  padding: 8px 0 16px;
+}
+
+.view-group-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.view-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-surface-glass, rgba(20, 24, 38, 0.65));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  user-select: none;
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.view-group-header:hover {
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.theme-light .view-group-header {
+  background: rgba(240, 243, 250, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .view-group-header:hover {
+  background: rgba(230, 235, 245, 0.95);
+}
+
+.list-container .view-group-header {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  top: 32px; /* sticky right under list-header */
+}
+
+.view-group-toggle {
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: color 0.15s ease;
+}
+
+.view-group-toggle:hover {
+  color: var(--accent);
+}
+
+.group-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.view-group-section.collapsed .group-chevron {
+  transform: rotate(-90deg);
+}
+
+.view-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.view-group-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--fill-subtle, rgba(99, 102, 241, 0.12));
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  line-height: 1.4;
+}
+
+.view-group-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+  margin-left: 6px;
+  opacity: 0.5;
+}
+
+.view-group-section.collapsed .view-group-body {
+  display: none !important;
 }
 
 /* --- GRID VIEW --- */

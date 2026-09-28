@@ -376,6 +376,81 @@ function emptyRecycleBin(driveLetter = '') {
 }
 
 /**
+ * Robustly parses Windows Shell date strings (which often include Unicode LTR/RTL marks
+ * and regional day-month-year or month-day-year layouts) into a standardized ISO 8601 string.
+ */
+function parseShellDate(dateStr) {
+  if (!dateStr) return null;
+  const clean = String(dateStr).replace(/[\u200E\u200F\u202A-\u202E\uFEFF]/g, '').trim();
+  if (!clean) return null;
+
+  const direct = new Date(clean);
+  if (!isNaN(direct.getTime())) return direct.toISOString();
+
+  const m = clean.match(/^(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?)?$/i);
+  if (m) {
+    let [, p1, p2, p3, h, min, s, ampm] = m;
+    let year, month, day;
+    if (p1.length === 4) {
+      year = parseInt(p1, 10);
+      month = parseInt(p2, 10) - 1;
+      day = parseInt(p3, 10);
+    } else {
+      year = parseInt(p3, 10);
+      if (year < 100) year += 2000;
+      day = parseInt(p1, 10);
+      month = parseInt(p2, 10) - 1;
+    }
+    let hour = h ? parseInt(h, 10) : 0;
+    if (ampm) {
+      if (ampm.toUpperCase() === 'PM' && hour < 12) hour += 12;
+      if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0;
+    }
+    const minute = min ? parseInt(min, 10) : 0;
+    const sec = s ? parseInt(s, 10) : 0;
+    const d = new Date(year, month, day, hour, minute, sec);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  return null;
+}
+
+/**
+ * Safely moves a file or directory into the Windows Recycle Bin using Microsoft.VisualBasic FileSystem.
+ */
+function moveToRecycleBin(targetPath) {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') {
+      return resolve({ success: false, error: 'Platform not supported' });
+    }
+    if (!targetPath || !fs.existsSync(targetPath)) {
+      return resolve({ success: false, error: 'File or directory does not exist' });
+    }
+    const escaped = targetPath.replace(/'/g, "''");
+    const ps = [
+      'Add-Type -AssemblyName Microsoft.VisualBasic',
+      `$p = '${escaped}'`,
+      'if (Test-Path -LiteralPath $p) {',
+      '  if ((Get-Item -LiteralPath $p) -is [System.IO.DirectoryInfo]) {',
+      "    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($p, 'OnlyErrorDialogs', 'SendToRecycleBin')",
+      '  } else {',
+      "    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($p, 'OnlyErrorDialogs', 'SendToRecycleBin')",
+      '  }',
+      '  "OK"',
+      '} else { "NOT_FOUND" }'
+    ].join('\r\n');
+
+    const b64 = Buffer.from(ps, 'utf16le').toString('base64');
+    exec(`powershell -NoProfile -EncodedCommand ${b64}`, { timeout: 10000 }, (err, stdout) => {
+      if (err || !stdout || !stdout.includes('OK')) {
+        resolve({ success: false, error: err ? err.message : 'Could not move to Recycle Bin' });
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
+}
+
+/**
  * Retrieves deleted items from the Windows Recycle Bin using Shell.Application COM.
  */
 function getRecycleBinItems() {
@@ -415,6 +490,7 @@ function getRecycleBinItems() {
         const items = parsed.map(it => {
           const isDir = Boolean(it.type && it.type.toLowerCase().includes('folder'));
           const ext = isDir ? '' : path.extname(it.name || '').toLowerCase();
+          const parsedDate = parseShellDate(it.dateDeleted);
           return {
             name: it.name,
             path: it.path,
@@ -424,8 +500,8 @@ function getRecycleBinItems() {
             isDirectory: isDir,
             isFile: !isDir,
             extension: ext,
-            mtime: it.dateDeleted || null,
-            birthtime: it.dateDeleted || null,
+            mtime: parsedDate || it.dateDeleted || null,
+            birthtime: parsedDate || it.dateDeleted || null,
             atime: null,
             isReadOnly: false,
             isHidden: false,
@@ -455,11 +531,12 @@ function restoreRecycleBinItem(itemPathOrName) {
       `$target = '${escaped}'`,
       '$matched = $false',
       'foreach ($item in $bin.Items()) {',
-      '  if ($item.Path -eq $target -or $item.Name -eq $target) {',
+      '  if ($item.Path -eq $target -or $item.Name -eq $target -or ($target -ne "" -and $item.Path.EndsWith($target))) {',
       '    foreach ($v in $item.Verbs()) {',
       "      if ($v.Name.Replace('&', '') -match 'Restore|Undelete') {",
       '        $v.DoIt()',
       '        $matched = $true',
+      '        Start-Sleep -Milliseconds 300',
       '        break',
       '      }',
       '    }',
@@ -501,6 +578,7 @@ function restoreAllRecycleBinItems() {
       '    }',
       '  }',
       '}',
+      'Start-Sleep -Milliseconds 400',
       '"OK"'
     ].join('\r\n');
 
@@ -517,11 +595,37 @@ function restoreAllRecycleBinItems() {
 /**
  * Permanently deletes an item from the Recycle Bin.
  */
-function deletePermanentlyRecycleBinItem(itemPathOrName) {
-  return new Promise((resolve) => {
-    if (process.platform !== 'win32') {
-      return resolve({ success: false, error: 'Platform not supported' });
+async function deletePermanentlyRecycleBinItem(itemPathOrName) {
+  if (process.platform !== 'win32') {
+    return { success: false, error: 'Platform not supported' };
+  }
+  if (!itemPathOrName) {
+    return { success: false, error: 'Target path required' };
+  }
+
+  // 1. Direct physical removal to avoid shell prompt blocking
+  try {
+    if (fs.existsSync(itemPathOrName)) {
+      const stats = await fs.promises.stat(itemPathOrName);
+      if (stats.isDirectory()) {
+        await fs.promises.rm(itemPathOrName, { recursive: true, force: true });
+      } else {
+        await fs.promises.unlink(itemPathOrName);
+      }
+      const baseName = path.basename(itemPathOrName);
+      if (baseName.startsWith('$R')) {
+        const iPath = path.join(path.dirname(itemPathOrName), '$I' + baseName.slice(2));
+        if (fs.existsSync(iPath)) {
+          try { await fs.promises.unlink(iPath); } catch {}
+        }
+      }
+      return { success: true };
     }
+  } catch (directErr) {
+    // Fall back to COM
+  }
+
+  return new Promise((resolve) => {
     const escaped = (itemPathOrName || '').replace(/'/g, "''");
     const ps = [
       '$sh = New-Object -ComObject Shell.Application',
@@ -529,11 +633,12 @@ function deletePermanentlyRecycleBinItem(itemPathOrName) {
       `$target = '${escaped}'`,
       '$matched = $false',
       'foreach ($item in $bin.Items()) {',
-      '  if ($item.Path -eq $target -or $item.Name -eq $target) {',
+      '  if ($item.Path -eq $target -or $item.Name -eq $target -or ($target -ne "" -and $item.Path.EndsWith($target))) {',
       '    foreach ($v in $item.Verbs()) {',
       "      if ($v.Name.Replace('&', '') -match 'Delete') {",
       '        $v.DoIt()',
       '        $matched = $true',
+      '        Start-Sleep -Milliseconds 300',
       '        break',
       '      }',
       '    }',
@@ -616,6 +721,8 @@ module.exports = {
   restoreRecycleBinItem,
   restoreAllRecycleBinItems,
   deletePermanentlyRecycleBinItem,
+  moveToRecycleBin,
+  parseShellDate,
   launchWindowsTool,
   EXTENSION_CATEGORIES
 };

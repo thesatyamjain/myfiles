@@ -321,6 +321,12 @@ ipcMain.handle('delete-item', async (_event, itemPath) => {
     await shell.trashItem(itemPath);
     return { success: true };
   } catch (err) {
+    if (process.platform === 'win32') {
+      try {
+        const binRes = await storage.moveToRecycleBin(itemPath);
+        if (binRes && binRes.success) return { success: true };
+      } catch {}
+    }
     // If trashItem fails, attempt unlink/rm
     try {
       const stats = await fs.promises.stat(itemPath);

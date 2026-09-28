@@ -146,6 +146,10 @@
     activeItemRotation: 0,
     sortField: 'name',
     sortAsc: true,
+    groupBy: (function() {
+      try { return localStorage.getItem('myfiles_group_by') || 'none'; } catch(e) { return 'none'; }
+    })(), // 'none' | 'kind' | 'date' | 'size' | 'name'
+    collapsedGroups: new Set(),
     itemCheckboxes: (function() {
       try { return localStorage.getItem('myfiles_checkboxes') === 'true'; } catch(e) { return false; }
     })(),
@@ -1039,6 +1043,7 @@
     voChkBrowse: document.getElementById('voChkBrowse'),
     voLblBrowse: document.getElementById('voLblBrowse'),
     voSortSelect: document.getElementById('voSortSelect'),
+    voGroupSelect: document.getElementById('voGroupSelect'),
     voChkPreviewCol: document.getElementById('voChkPreviewCol'),
     voChkIconPreview: document.getElementById('voChkIconPreview'),
     voChkFilename: document.getElementById('voChkFilename'),
@@ -1605,8 +1610,8 @@
     if (!targetPath) return;
 
     let resolved = targetPath.trim();
-    const lower = resolved.toLowerCase();
-    if (lower === 'trash' || lower === 'recycle' || lower === 'recycle bin' || lower === 'recycle-bin' || lower === 'shell:recyclebinfolder') {
+    const cleanLower = resolved.toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
+    if (cleanLower === 'trash' || cleanLower === 'recycle' || cleanLower === 'recycle bin' || cleanLower === 'recycle-bin' || cleanLower === 'shell:recyclebinfolder') {
       resolved = 'recycle-bin';
     } else if (/^[a-zA-Z]:$/.test(resolved)) {
       resolved += '\\';
@@ -1869,6 +1874,20 @@
   // --- BREADCRUMBS & ADDRESS BAR ---
   function renderBreadcrumbs(dirPath) {
     el.breadcrumbsTrail.innerHTML = '';
+    const normLower = (dirPath || '').trim().toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
+    if (normLower === 'recycle bin' || normLower === 'recycle-bin' || normLower === 'trash') {
+      const crumb = document.createElement('div');
+      crumb.className = 'crumb-item active';
+      crumb.textContent = 'Recycle Bin';
+      crumb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateTo('recycle-bin');
+      });
+      el.breadcrumbsTrail.appendChild(crumb);
+      el.pathInput.value = 'Recycle Bin';
+      return;
+    }
+
     const parts = dirPath.split('\\').filter(Boolean);
     
     let accumulated = '';
@@ -2344,14 +2363,21 @@
               </button>
             ` : ''}
             <button class="tool-btn btn-primary" id="galleryHeroOpen" style="flex: 1; justify-content: center; height: 34px;">
-              ${currentItem.isDirectory ? 'Open Folder' : 'Open'}
+              ${currentItem.isRecycleBinItem ? 'Restore Item' : (currentItem.isDirectory ? 'Open Folder' : 'Open')}
             </button>
           </div>
         </div>
       `;
       const heroCard = hero.querySelector('#galleryHeroCard');
-      if (heroCard && currentItem.isDirectory) {
-        heroCard.addEventListener('dblclick', () => navigateTo(currentItem.path));
+      if (heroCard) {
+        heroCard.addEventListener('dblclick', () => {
+          if (currentItem.isRecycleBinItem) {
+            handleRecycleItemDoubleClick(currentItem);
+            return;
+          }
+          if (currentItem.isDirectory) navigateTo(currentItem.path);
+          else api.openItem(currentItem.path);
+        });
       }
       const qlBtn = hero.querySelector('#galleryHeroQl');
       if (qlBtn) {
@@ -2360,6 +2386,10 @@
       const openBtn = hero.querySelector('#galleryHeroOpen');
       if (openBtn) {
         openBtn.addEventListener('click', () => {
+          if (currentItem.isRecycleBinItem) {
+            handleRecycleItemDoubleClick(currentItem);
+            return;
+          }
           if (currentItem.isDirectory) navigateTo(currentItem.path);
           else api.openItem(currentItem.path);
         });
@@ -2405,6 +2435,10 @@
       });
 
       scrubberItem.addEventListener('dblclick', () => {
+        if (item.isRecycleBinItem) {
+          handleRecycleItemDoubleClick(item);
+          return;
+        }
         if (item.isDirectory) navigateTo(item.path);
         else api.openItem(item.path);
       });
@@ -2811,6 +2845,25 @@
   // --- 1. MILLER COLUMNS VIEW (Finder's signature feature) ---
   async function setupMillerColumns(rootPath) {
     if (!rootPath) return;
+    const cleanLower = rootPath.trim().toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
+    if (cleanLower === 'recycle bin' || cleanLower === 'recycle-bin' || cleanLower === 'trash') {
+      const res = await api.readDir('recycle-bin');
+      const sortedItems = sortItemList(res.items || []);
+      const selectedItem = sortedItems.length > 0 ? (sortedItems.find(item => state.showHidden || !isSystemOrHidden(item)) || sortedItems[0]) : null;
+      state.millerColumns = [{
+        path: 'Recycle Bin',
+        items: sortedItems,
+        selectedItem: selectedItem || null
+      }];
+      state.activeColumnIndex = 0;
+      if (selectedItem) {
+        state.activeItem = selectedItem;
+      }
+      renderMillerColumns();
+      renderPreviewPane();
+      return;
+    }
+
     const normalized = rootPath.replace(/\//g, '\\');
     const isWindowsDrive = /^[a-zA-Z]:/.test(normalized);
     let parts = [];
@@ -3011,6 +3064,10 @@
 
           // Double click
           itemEl.addEventListener('dblclick', () => {
+            if (item.isRecycleBinItem) {
+              handleRecycleItemDoubleClick(item);
+              return;
+            }
             if (item.isDirectory) {
               navigateTo(item.path);
             } else {
@@ -3077,9 +3134,9 @@
       container.appendChild(colEl);
     });
 
-    // If last column has a selected file, show file inspector panel!
+    // If last column has a selected file or Recycle Bin item, show file inspector panel!
     const lastCol = state.millerColumns[state.millerColumns.length - 1];
-    if (lastCol && lastCol.selectedItem && !lastCol.selectedItem.isDirectory) {
+    if (lastCol && lastCol.selectedItem && (!lastCol.selectedItem.isDirectory || lastCol.selectedItem.isRecycleBinItem)) {
       const previewCol = renderFilePreviewColumn(lastCol.selectedItem);
       container.appendChild(previewCol);
     }
@@ -3095,6 +3152,16 @@
   async function handleColumnItemClick(colIdx, item, e) {
     state.activeColumnIndex = colIdx;
     selectColumnItem(colIdx, item);
+
+    if (item.isRecycleBinItem) {
+      state.millerColumns = state.millerColumns.slice(0, colIdx + 1);
+      state.millerColumns[colIdx].selectedItem = item;
+      state.activeItem = item;
+      updateStatusBar();
+      renderMillerColumns();
+      renderPreviewPane();
+      return;
+    }
 
     if (item.isDirectory) {
       // Cut off columns beyond colIdx
@@ -3175,6 +3242,38 @@
       `;
     }
 
+    if (item.isRecycleBinItem) {
+      pane.innerHTML = `
+        ${iconOrThumbHtml}
+        <div class="cp-title">${escapeHtml(item.name)}</div>
+
+        <div class="cp-meta-grid">
+          <span class="cp-label">Original Loc</span>
+          <span class="cp-val" style="word-break: break-all; font-size: 11px;">${escapeHtml(item.originalLocation || item.originalPath || '--')}</span>
+          <span class="cp-label">Date Deleted</span>
+          <span class="cp-val">${formatDate(item.mtime)}</span>
+          <span class="cp-label">Kind</span>
+          <span class="cp-val">${formatKind(item)}</span>
+          <span class="cp-label">Size</span>
+          <span class="cp-val">${item.isDirectory ? 'Folder' : formatBytes(item.size)}</span>
+        </div>
+
+        <div class="cp-actions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+          <button class="tool-btn btn-primary" id="cpBtnRestore" style="width: 100%; justify-content: center;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restore Item
+          </button>
+          <button class="tool-btn danger" id="cpBtnDeletePermanently" style="width: 100%; justify-content: center;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            Delete Permanently
+          </button>
+        </div>
+      `;
+      pane.querySelector('#cpBtnRestore').addEventListener('click', () => handleRestoreSelectedItem(item));
+      pane.querySelector('#cpBtnDeletePermanently').addEventListener('click', () => handleDeletePermanentlyItem(item));
+      return pane;
+    }
+
     pane.innerHTML = `
       ${iconOrThumbHtml}
       <div class="cp-title">${escapeHtml(item.name)}</div>
@@ -3220,9 +3319,156 @@
     pane.querySelector('#cpBtnQuickLook').addEventListener('click', () => openQuickLook(item));
     pane.querySelector('#cpBtnOpen').addEventListener('click', () => api.openItem(item.path));
 
-    return pane;
+    // --- SORT GROUPING / GROUP BY SUBSYSTEM ---
+  const groupLabelMap = {
+    none: 'None',
+    kind: 'Kind / Type',
+    date: 'Date Modified',
+    size: 'Size',
+    name: 'Name (A-Z)'
+  };
+
+  function getGroupedItems(items, groupBy) {
+    if (!items || items.length === 0 || !groupBy || groupBy === 'none') {
+      return null;
+    }
+
+    const groupMap = new Map();
+
+    const getGroupInfo = (item) => {
+      if (groupBy === 'kind') {
+        if (item.isDirectory) return { id: 'kind-folder', title: 'Folders', order: 0 };
+        const ext = (item.extension || '').toLowerCase();
+        if (['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp', '.ico', '.tiff', '.avif'].includes(ext)) {
+          return { id: 'kind-image', title: 'Images', order: 1 };
+        }
+        if (['.mp4', '.mov', '.webm', '.mkv', '.avi', '.wmv', '.flv', '.m4v'].includes(ext)) {
+          return { id: 'kind-video', title: 'Videos', order: 2 };
+        }
+        if (['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac', '.wma'].includes(ext)) {
+          return { id: 'kind-audio', title: 'Audio', order: 3 };
+        }
+        if (['.pdf', '.txt', '.md', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.csv', '.rtf', '.odt', '.pages', '.epub'].includes(ext)) {
+          return { id: 'kind-doc', title: 'Documents', order: 4 };
+        }
+        if (['.js', '.ts', '.jsx', '.tsx', '.py', '.html', '.css', '.json', '.dart', '.rs', '.cpp', '.c', '.h', '.cs', '.java', '.go', '.php', '.sh', '.bat', '.cmd', '.ps1', '.sql', '.xml', '.yaml', '.yml'].includes(ext)) {
+          return { id: 'kind-code', title: 'Code & Scripts', order: 5 };
+        }
+        if (['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.bz2', '.tbz2', '.xz', '.txz', '.iso', '.cab', '.zst', '.arj', '.lzh', '.jar'].includes(ext)) {
+          return { id: 'kind-archive', title: 'Archives', order: 6 };
+        }
+        return { id: 'kind-other', title: 'Other Files', order: 7 };
+      }
+
+      if (groupBy === 'date') {
+        if (!item.mtime) return { id: 'date-unknown', title: 'Unknown Date', order: 99 };
+        const d = new Date(item.mtime);
+        if (isNaN(d.getTime())) return { id: 'date-unknown', title: 'Unknown Date', order: 99 };
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const itemTime = d.getTime();
+        const oneDay = 86400000;
+
+        if (itemTime >= startOfToday) {
+          return { id: 'date-today', title: 'Today', order: 0 };
+        } else if (itemTime >= startOfToday - oneDay) {
+          return { id: 'date-yesterday', title: 'Yesterday', order: 1 };
+        } else if (itemTime >= startOfToday - 6 * oneDay) {
+          return { id: 'date-this-week', title: 'Earlier this week', order: 2 };
+        } else if (itemTime >= startOfToday - 13 * oneDay) {
+          return { id: 'date-last-week', title: 'Last week', order: 3 };
+        } else if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+          return { id: 'date-this-month', title: 'Earlier this month', order: 4 };
+        } else if (d.getFullYear() === now.getFullYear()) {
+          return { id: 'date-this-year', title: 'Earlier this year', order: 5 };
+        } else {
+          return { id: 'date-older', title: 'A long time ago', order: 6 };
+        }
+      }
+
+      if (groupBy === 'size') {
+        if (item.isDirectory) return { id: 'size-folder', title: 'Folders', order: 0 };
+        const sz = Number(item.size) || 0;
+        if (sz >= 128 * 1024 * 1024) return { id: 'size-gigantic', title: 'Gigantic (> 128 MB)', order: 1 };
+        if (sz >= 16 * 1024 * 1024) return { id: 'size-huge', title: 'Huge (16 MB - 128 MB)', order: 2 };
+        if (sz >= 1024 * 1024) return { id: 'size-medium', title: 'Medium (1 MB - 16 MB)', order: 3 };
+        if (sz >= 128 * 1024) return { id: 'size-small', title: 'Small (128 KB - 1 MB)', order: 4 };
+        return { id: 'size-tiny', title: 'Tiny (< 128 KB)', order: 5 };
+      }
+
+      if (groupBy === 'name') {
+        const firstChar = (item.name || '').trim().charAt(0).toUpperCase();
+        if (firstChar >= 'A' && firstChar <= 'D') return { id: 'name-ad', title: 'A - D', order: 0 };
+        if (firstChar >= 'E' && firstChar <= 'H') return { id: 'name-eh', title: 'E - H', order: 1 };
+        if (firstChar >= 'I' && firstChar <= 'L') return { id: 'name-il', title: 'I - L', order: 2 };
+        if (firstChar >= 'M' && firstChar <= 'P') return { id: 'name-mp', title: 'M - P', order: 3 };
+        if (firstChar >= 'Q' && firstChar <= 'T') return { id: 'name-qt', title: 'Q - T', order: 4 };
+        if (firstChar >= 'U' && firstChar <= 'Z') return { id: 'name-uz', title: 'U - Z', order: 5 };
+        return { id: 'name-other', title: '0 - 9 & Symbols', order: 6 };
+      }
+
+      return { id: 'other', title: 'Other', order: 99 };
+    };
+
+    items.forEach((item, idx) => {
+      const info = getGroupInfo(item);
+      if (!groupMap.has(info.id)) {
+        groupMap.set(info.id, {
+          id: info.id,
+          title: info.title,
+          order: info.order,
+          items: []
+        });
+      }
+      groupMap.get(info.id).items.push({ item, index: idx });
+    });
+
+    return Array.from(groupMap.values()).sort((a, b) => a.order - b.order);
   }
 
+  function createGroupHeaderElement(group) {
+    const isCollapsed = state.collapsedGroups.has(group.id);
+    const header = document.createElement('div');
+    header.className = 'view-group-header';
+    header.innerHTML = `
+      <button class="view-group-toggle" aria-label="Toggle group">
+        <svg class="group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <span class="view-group-title">${escapeHtml(group.title)}</span>
+      <span class="view-group-count">${group.items.length}</span>
+      <div class="view-group-line"></div>
+    `;
+
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const section = header.closest('.view-group-section');
+      if (!section) return;
+      if (state.collapsedGroups.has(group.id)) {
+        state.collapsedGroups.delete(group.id);
+        section.classList.remove('collapsed');
+      } else {
+        state.collapsedGroups.add(group.id);
+        section.classList.add('collapsed');
+      }
+    });
+
+    return header;
+  }
+
+  function setGroupBy(group) {
+    state.groupBy = group || 'none';
+    try {
+      localStorage.setItem('myfiles_group_by', state.groupBy);
+    } catch(e) {}
+    document.querySelectorAll('#sortDropdown .dropdown-item[data-group]').forEach(item => {
+      item.classList.toggle('active', item.dataset.group === state.groupBy);
+    });
+    if (el.voGroupSelect) {
+      el.voGroupSelect.value = state.groupBy;
+    }
+    renderCurrentView();
+    showToast(state.groupBy === 'none' ? 'Grouping turned off' : `Grouped by ${groupLabelMap[state.groupBy] || state.groupBy}`, 'info');
+  }
 
   // --- 2. LIST VIEW (Hierarchical Tree Expansion - Reference 4) ---
   function renderListView() {
@@ -3296,6 +3542,7 @@
       const isSelected = mainIdx !== -1 ? state.selectedIndices.has(mainIdx) : (state.activeItem && state.activeItem.path === item.path);
         const isHidden = isSystemOrHidden(item);
         row.className = `list-row ${isSelected ? 'selected' : ''} ${isHidden ? 'item-hidden' : ''}`;
+        if (mainIdx !== -1) row.dataset.index = mainIdx;
         row.draggable = true;
 
         const tag = state.tags[item.path] || '';
@@ -3395,6 +3642,10 @@
         });
 
         row.addEventListener('dblclick', () => {
+          if (item.isRecycleBinItem) {
+            handleRecycleItemDoubleClick(item);
+            return;
+          }
           if (item.isDirectory) {
             navigateTo(item.path);
           } else {
@@ -3421,27 +3672,47 @@
       return row;
     }
 
-    function appendRows(itemsList, depth = 0) {
+    function appendRows(itemsList, depth = 0, targetParent = container) {
       itemsList.forEach((item) => {
         const row = createListRowElement(item, depth);
-        container.appendChild(row);
+        targetParent.appendChild(row);
         if (item.isDirectory && state.expandedFolders.has(item.path)) {
           const children = state.expandedFolders.get(item.path) || [];
-          appendRows(children, depth + 1);
+          appendRows(children, depth + 1, targetParent);
         }
       });
     }
 
-    if (state.expandedFolders.size === 0 && state.items.length > 80 && typeof VirtualScroller !== 'undefined') {
-      new VirtualScroller({
-        viewport: container,
-        totalItems: state.items.length,
-        itemHeight: state.compactMode ? 26 : 34,
-        threshold: 80,
-        renderItem: (idx) => createListRowElement(state.items[idx], 0)
+    const grouped = getGroupedItems(state.items, state.groupBy);
+    if (grouped) {
+      grouped.forEach(group => {
+        const section = document.createElement('div');
+        const isCollapsed = state.collapsedGroups.has(group.id);
+        section.className = `view-group-section ${isCollapsed ? 'collapsed' : ''}`;
+        section.dataset.groupId = group.id;
+
+        const groupHeader = createGroupHeaderElement(group);
+        section.appendChild(groupHeader);
+
+        const body = document.createElement('div');
+        body.className = 'view-group-body';
+
+        appendRows(group.items.map(it => it.item), 0, body);
+        section.appendChild(body);
+        container.appendChild(section);
       });
     } else {
-      appendRows(state.items, 0);
+      if (state.expandedFolders.size === 0 && state.items.length > 80 && typeof VirtualScroller !== 'undefined') {
+        new VirtualScroller({
+          viewport: container,
+          totalItems: state.items.length,
+          itemHeight: state.compactMode ? 26 : 34,
+          threshold: 80,
+          renderItem: (idx) => createListRowElement(state.items[idx], 0)
+        });
+      } else {
+        appendRows(state.items, 0, container);
+      }
     }
 
     if (state.itemCheckboxes) {
@@ -3493,14 +3764,7 @@
       return;
     }
 
-    const container = document.createElement('div');
-    container.className = 'grid-container';
-
-    // Apply zoom sizing via responsive gear variables
-    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(var(--grid-card-size, 108px), 1fr))';
-    container.style.gap = 'var(--grid-card-gap, 14px)';
-
-    state.items.forEach((item, idx) => {
+    function createGridItemElement(item, idx) {
       const isSelected = state.selectedIndices.has(idx);
       const isHidden = isSystemOrHidden(item);
       const itemEl = document.createElement('div');
@@ -3563,6 +3827,10 @@
       });
 
       itemEl.addEventListener('dblclick', () => {
+        if (item.isRecycleBinItem) {
+          handleRecycleItemDoubleClick(item);
+          return;
+        }
         if (item.isDirectory) {
           navigateTo(item.path);
         } else {
@@ -3588,11 +3856,54 @@
         setupFolderDropTarget(itemEl, item.path, () => navigateTo(state.currentPath, false));
       }
 
-      container.appendChild(itemEl);
-    });
+      return itemEl;
+    }
 
-    el.primaryViewport.appendChild(container);
-    container.scrollTop = 0;
+    const grouped = getGroupedItems(state.items, state.groupBy);
+    if (grouped) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grouped-grid-wrapper';
+
+      grouped.forEach(group => {
+        const section = document.createElement('div');
+        const isCollapsed = state.collapsedGroups.has(group.id);
+        section.className = `view-group-section ${isCollapsed ? 'collapsed' : ''}`;
+        section.dataset.groupId = group.id;
+
+        const groupHeader = createGroupHeaderElement(group);
+        section.appendChild(groupHeader);
+
+        const groupGrid = document.createElement('div');
+        groupGrid.className = 'grid-container view-group-body';
+        groupGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(var(--grid-card-size, 108px), 1fr))';
+        groupGrid.style.gap = 'var(--grid-card-gap, 14px)';
+
+        group.items.forEach(({ item, index }) => {
+          groupGrid.appendChild(createGridItemElement(item, index));
+        });
+
+        section.appendChild(groupGrid);
+        wrapper.appendChild(section);
+      });
+
+      el.primaryViewport.appendChild(wrapper);
+      wrapper.scrollTop = 0;
+    } else {
+      const container = document.createElement('div');
+      container.className = 'grid-container';
+
+      // Apply zoom sizing via responsive gear variables
+      container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(var(--grid-card-size, 108px), 1fr))';
+      container.style.gap = 'var(--grid-card-gap, 14px)';
+
+      state.items.forEach((item, idx) => {
+        container.appendChild(createGridItemElement(item, idx));
+      });
+
+      el.primaryViewport.appendChild(container);
+      container.scrollTop = 0;
+    }
+
     if (el.primaryViewport) {
       el.primaryViewport.scrollTop = 0;
       el.primaryViewport.scrollLeft = 0;
@@ -5642,6 +5953,14 @@
     }
   }
 
+  function handleRecycleItemDoubleClick(item) {
+    if (!item) return;
+    const orig = item.originalLocation || item.originalPath || 'its original location';
+    if (confirm(`Restore "${item.name}" to ${orig}?`)) {
+      handleRestoreSelectedItem(item);
+    }
+  }
+
   async function handleRestoreSelectedItem(targetItem = null) {
     let item = targetItem || state.activeItem;
     if (!item && state.selectedIndices && state.selectedIndices.size > 0) {
@@ -5992,6 +6311,10 @@
 
       row.addEventListener('click', (e) => handleItemSelection(idx, e));
       row.addEventListener('dblclick', () => {
+        if (item.isRecycleBinItem) {
+          handleRecycleItemDoubleClick(item);
+          return;
+        }
         if (item.isDirectory) {
           state.isSearching = false;
           el.searchInput.value = '';
@@ -6172,6 +6495,12 @@
       if (el.ctxArchiveDivider) el.ctxArchiveDivider.style.display = 'none';
       if (el.ctxExtractAll) el.ctxExtractAll.style.display = 'none';
       if (el.ctxExtractHere) el.ctxExtractHere.style.display = 'none';
+      if (el.ctxFindDuplicates) el.ctxFindDuplicates.style.display = 'none';
+      if (el.ctxManageStorage) el.ctxManageStorage.style.display = 'none';
+      if (el.ctxViewOptions) el.ctxViewOptions.style.display = 'none';
+      if (el.ctxPreferences) el.ctxPreferences.style.display = 'none';
+      if (el.ctxPowerShell) el.ctxPowerShell.style.display = 'none';
+      if (el.ctxCmd) el.ctxCmd.style.display = 'none';
     } else {
       if (el.ctxRestore) el.ctxRestore.style.display = 'none';
       if (el.ctxDeletePermanently) el.ctxDeletePermanently.style.display = 'none';
@@ -6636,6 +6965,9 @@
     // Populate controls from state
     if (el.voSortSelect) {
       el.voSortSelect.value = state.sortField || 'name';
+    }
+    if (el.voGroupSelect) {
+      el.voGroupSelect.value = state.groupBy || 'none';
     }
     if (el.voChkPreviewCol) {
       el.voChkPreviewCol.checked = !!state.previewPaneOpen;
@@ -7172,7 +7504,8 @@
     if (state.viewMode === 'list') {
       const rows = el.primaryViewport.querySelectorAll('.list-row');
       rows.forEach((r, i) => {
-        const sel = state.selectedIndices.has(i);
+        const itemIdx = r.dataset.index !== undefined ? parseInt(r.dataset.index, 10) : i;
+        const sel = state.selectedIndices.has(itemIdx);
         r.classList.toggle('selected', sel);
         const chk = r.querySelector('.item-checkbox');
         if (chk) chk.checked = sel;
@@ -7180,7 +7513,8 @@
     } else if (state.viewMode === 'grid') {
       const items = el.primaryViewport.querySelectorAll('.grid-item');
       items.forEach((it, i) => {
-        const sel = state.selectedIndices.has(i);
+        const itemIdx = it.dataset.index !== undefined ? parseInt(it.dataset.index, 10) : i;
+        const sel = state.selectedIndices.has(itemIdx);
         it.classList.toggle('selected', sel);
         const chk = it.querySelector('.item-checkbox');
         if (chk) chk.checked = sel;
@@ -8966,22 +9300,30 @@
           const isAsc = item.dataset.sortDir === 'asc';
           item.classList.toggle('active', isAsc === state.sortAsc);
         });
+        document.querySelectorAll('#sortDropdown .dropdown-item[data-group]').forEach(item => {
+          item.classList.toggle('active', item.dataset.group === (state.groupBy || 'none'));
+        });
 
         el.sortDropdown.classList.toggle('open');
       });
 
-      document.querySelectorAll('#sortDropdown .dropdown-item[data-sort], #sortDropdown .dropdown-item[data-sort-dir]').forEach(item => {
+      document.querySelectorAll('#sortDropdown .dropdown-item[data-sort], #sortDropdown .dropdown-item[data-sort-dir], #sortDropdown .dropdown-item[data-group]').forEach(item => {
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           el.sortDropdown.classList.remove('open');
           if (item.dataset.sort) {
             state.sortField = item.dataset.sort;
+            sortCurrentItems();
+            renderCurrentView();
+            showToast(`Sorted by ${state.sortField} (${state.sortAsc ? 'Ascending' : 'Descending'})`, 'info');
           } else if (item.dataset.sortDir) {
             state.sortAsc = item.dataset.sortDir === 'asc';
+            sortCurrentItems();
+            renderCurrentView();
+            showToast(`Sorted by ${state.sortField} (${state.sortAsc ? 'Ascending' : 'Descending'})`, 'info');
+          } else if (item.dataset.group) {
+            setGroupBy(item.dataset.group);
           }
-          sortCurrentItems();
-          renderCurrentView();
-          showToast(`Sorted by ${state.sortField} (${state.sortAsc ? 'Ascending' : 'Descending'})`, 'info');
         });
       });
     }
@@ -10036,6 +10378,11 @@
         state.sortField = e.target.value;
         sortCurrentItems();
         renderCurrentView();
+      });
+    }
+    if (el.voGroupSelect) {
+      el.voGroupSelect.addEventListener('change', (e) => {
+        setGroupBy(e.target.value);
       });
     }
     if (el.viewOptionsPanel) {

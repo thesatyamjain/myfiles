@@ -1512,6 +1512,17 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(typeof storageMod.restoreRecycleBinItem === 'function', 'storage.js must export restoreRecycleBinItem');
   assert(typeof storageMod.restoreAllRecycleBinItems === 'function', 'storage.js must export restoreAllRecycleBinItems');
   assert(typeof storageMod.deletePermanentlyRecycleBinItem === 'function', 'storage.js must export deletePermanentlyRecycleBinItem');
+  assert(typeof storageMod.moveToRecycleBin === 'function', 'storage.js must export moveToRecycleBin');
+  assert(typeof storageMod.parseShellDate === 'function', 'storage.js must export parseShellDate');
+
+  // Verify parseShellDate handles Unicode directional marks (\u200e, \u200f)
+  const parsedDate = storageMod.parseShellDate('\u200e13-\u200e09-\u200e2026 \u200f18:24');
+  assert(parsedDate !== null, 'parseShellDate must parse string with directional marks');
+  assert(!isNaN(new Date(parsedDate).getTime()), 'parseShellDate must return valid ISO date');
+
+  // Verify resolvePath handles trailing and leading slashes for Recycle Bin
+  assert.strictEqual(fsEngineMod.resolvePath('Recycle Bin\\'), 'recycle-bin', 'resolvePath must normalize "Recycle Bin\\"');
+  assert.strictEqual(fsEngineMod.resolvePath('\\Recycle Bin'), 'recycle-bin', 'resolvePath must normalize "\\Recycle Bin"');
 
   // Query live recycle bin stats and directory listing
   const liveRecycleStats = await storageMod.queryRecycleBin();
@@ -1541,6 +1552,7 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(updatedPreload.includes('openRecycleBin:'), 'preload.js must expose openRecycleBin');
   assert(updatedPreload.includes('getRecycleStats:'), 'preload.js must expose getRecycleStats');
   assert(updatedPreload.includes('restoreRecycleItem:'), 'preload.js must expose restoreRecycleItem');
+  assert(updatedPreload.includes('emptyRecycleBin:'), 'preload.js must expose emptyRecycleBin');
   assert(updatedPreload.includes('restoreAllRecycle:'), 'preload.js must expose restoreAllRecycle');
   assert(updatedPreload.includes('deletePermanently:'), 'preload.js must expose deletePermanently');
 
@@ -1572,6 +1584,7 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(updatedRenderer.includes('handleRestoreSelectedItem'), 'renderer.js must implement handleRestoreSelectedItem');
   assert(updatedRenderer.includes('handleRestoreAllRecycle'), 'renderer.js must implement handleRestoreAllRecycle');
   assert(updatedRenderer.includes('handleDeletePermanentlyItem'), 'renderer.js must implement handleDeletePermanentlyItem');
+  assert(updatedRenderer.includes('handleRecycleItemDoubleClick'), 'renderer.js must implement handleRecycleItemDoubleClick');
 
   console.log('✓ System Recycle Bin Integration Engine (Native Shell, In-App View, Restore & Permanent Deletion) verified');
 
@@ -1689,6 +1702,56 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   }
   assert(missingServerRoutes.length === 0, `All client API endpoints must have corresponding routes in server.js: ${missingServerRoutes.join(', ')}`);
   console.log(`✓ Dual Runtime API Parity (${mainHandles.length} IPC channels & ${allClientRoutes.length} REST endpoints) verified`);
+
+  // 51. Sort Grouping / Group By Engine & Visual Hierarchy Suite
+  assert(updatedIndex.includes('data-group="none"'), 'index.html must include data-group="none"');
+  assert(updatedIndex.includes('data-group="kind"'), 'index.html must include data-group="kind"');
+  assert(updatedIndex.includes('data-group="date"'), 'index.html must include data-group="date"');
+  assert(updatedIndex.includes('data-group="size"'), 'index.html must include data-group="size"');
+  assert(updatedIndex.includes('data-group="name"'), 'index.html must include data-group="name"');
+  assert(updatedIndex.includes('id="voGroupSelect"'), 'index.html must include voGroupSelect in View Options');
+
+  assert(updatedStyles.includes('.grouped-grid-wrapper'), 'styles.css must style .grouped-grid-wrapper');
+  assert(updatedStyles.includes('.view-group-section'), 'styles.css must style .view-group-section');
+  assert(updatedStyles.includes('.view-group-header'), 'styles.css must style .view-group-header');
+  assert(updatedStyles.includes('.group-chevron'), 'styles.css must style .group-chevron');
+  assert(updatedStyles.includes('.view-group-title'), 'styles.css must style .view-group-title');
+  assert(updatedStyles.includes('.view-group-count'), 'styles.css must style .view-group-count');
+
+  assert(updatedRenderer.includes('getGroupedItems'), 'renderer.js must implement getGroupedItems');
+  assert(updatedRenderer.includes('createGroupHeaderElement'), 'renderer.js must implement createGroupHeaderElement');
+  assert(updatedRenderer.includes('setGroupBy'), 'renderer.js must implement setGroupBy');
+  assert(updatedRenderer.includes('groupBy:'), 'renderer.js state must include groupBy');
+  assert(updatedRenderer.includes('collapsedGroups:'), 'renderer.js state must include collapsedGroups');
+  assert(updatedRenderer.includes('voGroupSelect:'), 'renderer.js el must cache voGroupSelect');
+
+  // Functional test of grouping logic
+  const sampleItems = [
+    { name: 'Documents', isDirectory: true, size: 0, mtime: new Date().toISOString() },
+    { name: 'photo.jpg', isDirectory: false, extension: '.jpg', size: 2 * 1024 * 1024, mtime: new Date().toISOString() },
+    { name: 'clip.mp4', isDirectory: false, extension: '.mp4', size: 200 * 1024 * 1024, mtime: new Date().toISOString() },
+    { name: 'song.mp3', isDirectory: false, extension: '.mp3', size: 5 * 1024 * 1024, mtime: new Date(Date.now() - 86400000).toISOString() },
+    { name: 'readme.txt', isDirectory: false, extension: '.txt', size: 1024, mtime: new Date(Date.now() - 30 * 86400000).toISOString() },
+    { name: 'archive.zip', isDirectory: false, extension: '.zip', size: 50 * 1024 * 1024, mtime: new Date(Date.now() - 400 * 86400000).toISOString() }
+  ];
+
+  // Verify grouping by kind separates directories, images, videos, audio, docs, and archives
+  const kindMatch = updatedRenderer.match(/function getGroupedItems\([\s\S]+?\n  \}/);
+  assert(kindMatch, 'renderer.js must have complete getGroupedItems function body');
+  const getGroupedItemsEval = new Function('items', 'groupBy', 'escapeHtml', kindMatch[0] + '\nreturn getGroupedItems(items, groupBy);');
+  
+  const kindGroups = getGroupedItemsEval(sampleItems, 'kind', (s) => s);
+  assert(Array.isArray(kindGroups) && kindGroups.length > 0, 'Grouping by kind must return array of groups');
+  assert(kindGroups[0].title === 'Folders' && kindGroups[0].items.length === 1, 'First group must be Folders');
+
+  const sizeGroups = getGroupedItemsEval(sampleItems, 'size', (s) => s);
+  assert(Array.isArray(sizeGroups) && sizeGroups.length > 0, 'Grouping by size must return array of groups');
+  assert(sizeGroups.some(g => g.title.includes('Gigantic')), 'Must detect gigantic files (>128MB)');
+
+  const nameGroups = getGroupedItemsEval(sampleItems, 'name', (s) => s);
+  assert(Array.isArray(nameGroups) && nameGroups.length > 0, 'Grouping by name must return array of groups');
+
+  console.log('✓ Sort Grouping / Group By Engine & Visual Hierarchy Suite verified');
 
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {

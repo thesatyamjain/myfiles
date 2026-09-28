@@ -130,7 +130,7 @@ function getSpecialFolders() {
  */
 function resolvePath(rawPath) {
   if (!rawPath) return os.homedir();
-  const lower = rawPath.trim().toLowerCase();
+  const lower = rawPath.trim().toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
   if (lower === 'recycle-bin' || lower === 'recyclebin' || lower === 'trash' || lower === 'recycle bin' || lower === 'shell:recyclebinfolder') {
     return 'recycle-bin';
   }
@@ -158,7 +158,7 @@ function resolvePath(rawPath) {
  * Read directory entries with full stats & metadata
  */
 async function readDirectory(targetPath) {
-  const norm = (targetPath || '').trim().toLowerCase();
+  const norm = (targetPath || '').trim().toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
   if (norm === 'recycle-bin' || norm === 'recyclebin' || norm === 'trash' || norm === 'recycle bin' || norm === 'shell:recyclebinfolder') {
     try {
       const items = await storage.getRecycleBinItems();
