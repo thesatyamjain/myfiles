@@ -613,13 +613,28 @@ ipcMain.handle('launch-share-app', async (_event, appKey, targetPath) => {
 
       case 'quickshare': {
         const qsPaths = [
+          path.join(progFiles, 'Google', 'NearbyShare', 'nearby_share_launcher.exe'),
+          path.join(progFiles, 'Google', 'NearbyShare', 'nearby_share.exe'),
+          path.join(progFilesX86, 'Google', 'NearbyShare', 'nearby_share_launcher.exe'),
+          path.join(progFilesX86, 'Google', 'NearbyShare', 'nearby_share.exe'),
+          path.join(localAppData, 'Google', 'NearbyShare', 'nearby_share_launcher.exe'),
+          path.join(localAppData, 'Google', 'NearbyShare', 'nearby_share.exe'),
+          path.join(progFiles, 'Google', 'Nearby Share', 'nearby_share_launcher.exe'),
+          path.join(progFiles, 'Google', 'Nearby Share', 'nearby_share.exe'),
+          path.join(progFilesX86, 'Google', 'Nearby Share', 'nearby_share_launcher.exe'),
+          path.join(progFilesX86, 'Google', 'Nearby Share', 'nearby_share.exe'),
+          path.join(localAppData, 'Google', 'Nearby Share', 'nearby_share_launcher.exe'),
+          path.join(localAppData, 'Google', 'Nearby Share', 'nearby_share.exe'),
+          path.join(progFiles, 'Google', 'QuickShare', 'quick_share_launcher.exe'),
+          path.join(progFiles, 'Google', 'QuickShare', 'quick_share.exe'),
+          path.join(progFilesX86, 'Google', 'QuickShare', 'quick_share.exe'),
+          path.join(localAppData, 'Google', 'QuickShare', 'quick_share.exe'),
           path.join(progFiles, 'Google', 'Quick Share', 'quick_share.exe'),
           path.join(progFilesX86, 'Google', 'Quick Share', 'quick_share.exe'),
           path.join(localAppData, 'Google', 'Quick Share', 'quick_share.exe'),
-          path.join(progFiles, 'Google', 'Nearby Share', 'nearby_share.exe'),
-          path.join(progFilesX86, 'Google', 'Nearby Share', 'nearby_share.exe'),
-          path.join(localAppData, 'Google', 'Nearby Share', 'nearby_share.exe'),
-          path.join(progFiles, 'Samsung', 'QuickShare', 'QuickShare.exe')
+          path.join(progFiles, 'Samsung', 'QuickShare', 'QuickShare.exe'),
+          path.join(progFilesX86, 'Samsung', 'QuickShare', 'QuickShare.exe'),
+          path.join(localAppData, 'Programs', 'QuickShare', 'QuickShare.exe')
         ];
         const exe = qsPaths.find(p => fs.existsSync(p));
         if (exe) {
