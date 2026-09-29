@@ -16,6 +16,11 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.andruia.myfiles');
 }
 
+// Hardware & GPU rendering acceleration flags for zero-latency UI
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+
 const appIconPath = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 let appNativeIcon = null;
 try {
@@ -380,6 +385,9 @@ ipcMain.handle('batch-rename', async (_event, renames) => {
       results.push({ oldPath: item.oldPath, newPath: item.newPath, success: false, error: err.message });
     }
   }
+  if (results.some(r => r.success) && fsEngine.invalidateDirCache) {
+    fsEngine.invalidateDirCache();
+  }
   return { success: results.every(r => r.success), results };
 });
 
@@ -393,6 +401,7 @@ ipcMain.handle('create-folder', async (_event, parentDir, name) => {
   try {
     const target = path.join(parentDir, name);
     await fs.promises.mkdir(target, { recursive: false });
+    if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(parentDir);
     return { success: true, path: target };
   } catch (err) {
     return { success: false, error: err.message };
@@ -405,6 +414,7 @@ ipcMain.handle('create-file', async (_event, parentDir, name, content = '', enco
     const target = path.join(parentDir, name);
     const buf = encoding === 'base64' ? Buffer.from(content, 'base64') : content;
     await fs.promises.writeFile(target, buf);
+    if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(parentDir);
     return { success: true, path: target };
   } catch (err) {
     return { success: false, error: err.message };
@@ -417,6 +427,7 @@ ipcMain.handle('rename-item', async (_event, oldPath, newName) => {
     const parent = path.dirname(oldPath);
     const newPath = path.join(parent, newName);
     await fs.promises.rename(oldPath, newPath);
+    if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(parent);
     return { success: true, newPath };
   } catch (err) {
     return { success: false, error: err.message };
@@ -427,12 +438,16 @@ ipcMain.handle('rename-item', async (_event, oldPath, newName) => {
 ipcMain.handle('delete-item', async (_event, itemPath) => {
   try {
     await shell.trashItem(itemPath);
+    if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(path.dirname(itemPath));
     return { success: true };
   } catch (err) {
     if (process.platform === 'win32') {
       try {
         const binRes = await storage.moveToRecycleBin(itemPath);
-        if (binRes && binRes.success) return { success: true };
+        if (binRes && binRes.success) {
+          if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(path.dirname(itemPath));
+          return { success: true };
+        }
       } catch {}
     }
     // If trashItem fails, attempt unlink/rm
@@ -443,6 +458,7 @@ ipcMain.handle('delete-item', async (_event, itemPath) => {
       } else {
         await fs.promises.unlink(itemPath);
       }
+      if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(path.dirname(itemPath));
       return { success: true };
     } catch (e2) {
       return { success: false, error: e2.message };
@@ -473,6 +489,7 @@ ipcMain.handle('copy-items', async (_event, srcPaths, targetDir) => {
 
       await fs.promises.cp(src, dest, { recursive: true });
     }
+    if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(targetDir);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -500,6 +517,7 @@ ipcMain.handle('move-items', async (_event, srcPaths, targetDir) => {
         }
       }
     }
+    if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache();
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };

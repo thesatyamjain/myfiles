@@ -1459,7 +1459,7 @@
     const tab = state.tabs.find(t => t.id === tabId);
     if (!tab) return;
     state.activeTabId = tabId;
-    state.viewMode = tab.viewMode || 'columns';
+    state.viewMode = tab.viewMode || state.viewMode || 'grid';
     updateViewButtons();
     navigateTo(tab.path, false);
     renderTabs();
@@ -1623,9 +1623,66 @@
     });
   }
 
+  // --- FOLDER ITEM COUNT COOPERATIVE QUEUE ---
+  let folderCountQueue = [];
+  let folderCountRunning = 0;
+  const MAX_CONCURRENT_FOLDER_COUNTS = 2;
+
+  function cancelPendingFolderCounts() {
+    folderCountQueue = [];
+  }
+
+  function queueFolderCount(itemPath, itemEl) {
+    if (!itemPath || !api || !api.getFileDetails) return;
+    folderCountQueue.push({ itemPath, itemEl });
+    processFolderCountQueue();
+  }
+
+  function processFolderCountQueue() {
+    if (folderCountRunning >= MAX_CONCURRENT_FOLDER_COUNTS || folderCountQueue.length === 0) return;
+    const task = folderCountQueue.shift();
+    if (!task || !task.itemEl || !task.itemEl.isConnected) {
+      return processFolderCountQueue();
+    }
+
+    if (state.folderItemCounts && state.folderItemCounts.has(task.itemPath)) {
+      const cnt = state.folderItemCounts.get(task.itemPath);
+      const subEl = task.itemEl.querySelector('.grid-sub');
+      if (subEl && task.itemEl.isConnected) {
+        subEl.textContent = cnt === 0 ? 'Zero items' : (cnt === 1 ? '1 item' : `${cnt} items`);
+      }
+      return processFolderCountQueue();
+    }
+
+    folderCountRunning++;
+    const scheduleNext = () => {
+      folderCountRunning = Math.max(0, folderCountRunning - 1);
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => processFolderCountQueue(), { timeout: 100 });
+      } else {
+        setTimeout(processFolderCountQueue, 25);
+      }
+    };
+
+    api.getFileDetails(task.itemPath).then(res => {
+      if (res && res.success && res.fileCount !== undefined) {
+        if (!state.folderItemCounts) state.folderItemCounts = new Map();
+        state.folderItemCounts.set(task.itemPath, res.fileCount);
+        const subEl = task.itemEl.querySelector('.grid-sub');
+        if (subEl && task.itemEl.isConnected) {
+          const cnt = res.fileCount;
+          subEl.textContent = cnt === 0 ? 'Zero items' : (cnt === 1 ? '1 item' : `${cnt} items`);
+        }
+      }
+    }).catch(() => {}).finally(() => {
+      scheduleNext();
+    });
+  }
+
   // --- NAVIGATION & DIRECTORY READING ---
   async function navigateTo(targetPath, addToHistory = true) {
     if (!targetPath) return;
+    cancelPendingFolderCounts();
 
     let resolved = targetPath.trim();
     const cleanLower = resolved.toLowerCase().replace(/^[\\/]+|[\\/]+$/g, '');
@@ -1637,9 +1694,10 @@
 
     // Cache current viewport scroll position and active selection before leaving
     if (state.currentPath && el.primaryViewport) {
+      const scrollEl = el.primaryViewport.querySelector('.list-container, .grouped-grid-wrapper, .grid-container, .columns-container, .gallery-container') || el.primaryViewport;
       state.historyScrollMap.set(state.currentPath, {
-        scrollTop: el.primaryViewport.scrollTop,
-        scrollLeft: el.primaryViewport.scrollLeft,
+        scrollTop: scrollEl.scrollTop,
+        scrollLeft: scrollEl.scrollLeft,
         activePath: state.activeItem ? state.activeItem.path : null
       });
     }
@@ -1727,12 +1785,13 @@
     }
 
     if (el.primaryViewport) {
+      const scrollEl = el.primaryViewport.querySelector('.list-container, .grouped-grid-wrapper, .grid-container, .columns-container, .gallery-container') || el.primaryViewport;
       if (cachedScroll) {
-        el.primaryViewport.scrollTop = cachedScroll.scrollTop || 0;
-        el.primaryViewport.scrollLeft = cachedScroll.scrollLeft || 0;
+        scrollEl.scrollTop = cachedScroll.scrollTop || 0;
+        scrollEl.scrollLeft = cachedScroll.scrollLeft || 0;
       } else {
-        el.primaryViewport.scrollTop = 0;
-        el.primaryViewport.scrollLeft = 0;
+        scrollEl.scrollTop = 0;
+        scrollEl.scrollLeft = 0;
       }
     }
 
@@ -1971,7 +2030,11 @@
   }
 
   function setViewMode(mode) {
+    if (!mode) return;
     state.viewMode = mode;
+    try {
+      localStorage.setItem('myfiles_viewmode', mode);
+    } catch (e) {}
     const activeTab = state.tabs.find(t => t.id === state.activeTabId);
     if (activeTab) activeTab.viewMode = mode;
     updateViewButtons();
@@ -2490,13 +2553,175 @@
     }
   }
 
+  function renderMultiItemPreviewPane(selectedItems) {
+    const count = selectedItems.length;
+    const totalBytes = selectedItems.reduce((acc, it) => acc + (it.size || 0), 0);
+    const dirs = selectedItems.filter(it => it.isDirectory).length;
+    const files = count - dirs;
+
+    const imgCount = selectedItems.filter(it => !it.isDirectory && isImageFile(it)).length;
+    const vidCount = selectedItems.filter(it => !it.isDirectory && isVideoFile(it)).length;
+    const audCount = selectedItems.filter(it => !it.isDirectory && isAudioFile(it)).length;
+    const pdfCount = selectedItems.filter(it => !it.isDirectory && (it.extension || '').toLowerCase() === '.pdf').length;
+    const archiveCount = selectedItems.filter(it => !it.isDirectory && isArchiveFile(it)).length;
+    const otherFilesCount = files - (imgCount + vidCount + audCount + pdfCount + archiveCount);
+
+    const mtimes = selectedItems.map(it => new Date(it.mtime).getTime()).filter(n => !isNaN(n));
+    const minMtime = mtimes.length ? new Date(Math.min(...mtimes)) : null;
+    const maxMtime = mtimes.length ? new Date(Math.max(...mtimes)) : null;
+    const parentDir = selectedItems[0].path.replace(/[\\/][^\\/]+$/, '') || state.currentPath;
+
+    let chipsHtml = '';
+    if (dirs > 0) chipsHtml += `<span class="pp-breakdown-chip">${dirs} ${dirs === 1 ? 'Folder' : 'Folders'}</span>`;
+    if (imgCount > 0) chipsHtml += `<span class="pp-breakdown-chip">${imgCount} ${imgCount === 1 ? 'Image' : 'Images'}</span>`;
+    if (vidCount > 0) chipsHtml += `<span class="pp-breakdown-chip">${vidCount} ${vidCount === 1 ? 'Video' : 'Videos'}</span>`;
+    if (audCount > 0) chipsHtml += `<span class="pp-breakdown-chip">${audCount} Audio</span>`;
+    if (pdfCount > 0) chipsHtml += `<span class="pp-breakdown-chip">${pdfCount} PDF</span>`;
+    if (archiveCount > 0) chipsHtml += `<span class="pp-breakdown-chip">${archiveCount} ${archiveCount === 1 ? 'Archive' : 'Archives'}</span>`;
+    if (otherFilesCount > 0) chipsHtml += `<span class="pp-breakdown-chip">${otherFilesCount} Other</span>`;
+
+    el.previewPaneBody.innerHTML = `
+      <div class="pp-hero-wrap pp-hero-multi">
+        <div class="pp-multi-stack">
+          <div class="pp-multi-layer pp-layer-3"></div>
+          <div class="pp-multi-layer pp-layer-2"></div>
+          <div class="pp-multi-layer pp-layer-1">
+            <svg class="icon pp-multi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="pp-multi-badge">${count} items</div>
+      </div>
+
+      <div class="pp-meta-title-block">
+        <div class="pp-file-title">${count} items selected</div>
+        <div class="pp-file-subtitle">${formatBytes(totalBytes)} total</div>
+      </div>
+
+      ${chipsHtml ? `<div class="pp-breakdown-chips">${chipsHtml}</div>` : ''}
+
+      <div>
+        <div class="pp-section-header">
+          <span class="pp-section-title">Quick Actions</span>
+          <button class="pp-toggle-link" id="ppBtnMore" title="More Actions">More...</button>
+        </div>
+        <div class="pp-quick-actions-grid pp-multi-actions-grid">
+          <button class="pp-action-btn" id="ppBtnOpenAll" title="Open all selected items with default applications">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>Open All</span>
+          </button>
+          <button class="pp-action-btn" id="ppBtnCompressAll" title="Compress selected items into a ZIP archive">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span>Compress</span>
+          </button>
+          <button class="pp-action-btn" id="ppBtnCopyPathsAll" title="Copy paths of all selected items">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy Paths</span>
+          </button>
+        </div>
+        <div class="pp-footer-hint">${count} items selected across ${dirs > 0 && files > 0 ? `${files} files and ${dirs} folders` : (dirs > 0 ? `${dirs} folders` : `${files} files`)}.</div>
+      </div>
+
+      <div>
+        <div class="pp-section-title">Information</div>
+        <div class="pp-info-table">
+          <span class="pp-info-label">Selected</span>
+          <span class="pp-info-val">${count} items (${files} files, ${dirs} folders)</span>
+          <span class="pp-info-label">Total Size</span>
+          <span class="pp-info-val pp-info-copyable" data-copy="${totalBytes}" title="Click to copy exact bytes">${formatBytes(totalBytes)} (${totalBytes.toLocaleString()} bytes)</span>
+          <span class="pp-info-label">Location</span>
+          <span class="pp-info-val pp-info-copyable" data-copy="${escapeHtml(parentDir)}" title="Click to copy location" style="font-size: 11px; cursor: pointer;">
+            ${escapeHtml(parentDir)}
+            <svg class="icon pp-copy-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 11px; height: 11px; margin-left: 4px; vertical-align: middle; opacity: 0.6;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </span>
+          ${minMtime ? `
+            <span class="pp-info-label">Modified</span>
+            <span class="pp-info-val">${formatDate(minMtime)}${minMtime.getTime() !== (maxMtime && maxMtime.getTime()) ? ` – ${formatDate(maxMtime)}` : ''}</span>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    const btnOpenAll = el.previewPaneBody.querySelector('#ppBtnOpenAll');
+    if (btnOpenAll) {
+      btnOpenAll.addEventListener('click', () => {
+        selectedItems.forEach(it => api.openItem(it.path));
+        if (typeof showToast === 'function') showToast(`Opening ${count} items...`, 'info');
+      });
+    }
+
+    const btnCompressAll = el.previewPaneBody.querySelector('#ppBtnCompressAll');
+    if (btnCompressAll) {
+      btnCompressAll.addEventListener('click', () => {
+        performCompress('zip');
+      });
+    }
+
+    const btnCopyPaths = el.previewPaneBody.querySelector('#ppBtnCopyPathsAll');
+    if (btnCopyPaths) {
+      btnCopyPaths.addEventListener('click', () => {
+        const text = selectedItems.map(it => it.path).join('\n');
+        navigator.clipboard.writeText(text);
+        if (typeof showToast === 'function') showToast(`${count} paths copied to clipboard`, 'success');
+      });
+    }
+
+    const btnMore = el.previewPaneBody.querySelector('#ppBtnMore');
+    if (btnMore) {
+      btnMore.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = btnMore.getBoundingClientRect();
+        showContextMenu(rect.left, rect.top, selectedItems[0]);
+      });
+    }
+
+    el.previewPaneBody.querySelectorAll('.pp-info-copyable').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const textToCopy = cell.dataset.copy || cell.textContent.trim();
+        if (textToCopy) {
+          navigator.clipboard.writeText(textToCopy);
+          if (typeof showToast === 'function') showToast('Copied to clipboard', 'success');
+        }
+      });
+    });
+  }
+
   function renderPreviewPane() {
     if (!state.previewPaneOpen || !el.previewPaneBody) return;
+
+    // Check for multi-selection across views
+    const multiItems = (state.selectedIndices && state.selectedIndices.size > 1 && state.items)
+      ? Array.from(state.selectedIndices).map(idx => state.items[idx]).filter(Boolean)
+      : [];
+
+    if (multiItems.length > 1) {
+      renderMultiItemPreviewPane(multiItems);
+      return;
+    }
+
     const item = state.activeItem;
     if (!item) {
       el.previewPaneBody.innerHTML = `
-        <div class="empty-state" style="height: 100%;">
-          <span class="empty-state-sub">Select an item to inspect</span>
+        <div class="pp-empty-state-modern">
+          <div class="pp-empty-icon-wrap">
+            <svg class="icon pp-empty-lens-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8" x2="11" y2="14" stroke-linecap="round"/>
+              <line x1="8" y1="11" x2="14" y2="11" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="pp-empty-title">Inspector</div>
+          <div class="pp-empty-subtitle">Select an item to inspect attributes, preview contents, and run quick actions.</div>
+          <div class="pp-empty-shortcuts">
+            <span class="pp-empty-shortcut-badge"><kbd>Space</kbd> Quick Look</span>
+            <span class="pp-empty-shortcut-badge"><kbd>Ctrl+I</kbd> Toggle Pane</span>
+          </div>
         </div>
       `;
       return;
@@ -2552,7 +2777,9 @@
         </div>
       `;
     } else if (isText) {
-      heroHtml = `<pre class="pp-hero-text-preview" id="ppHeroTextPreview">Loading preview...</pre>`;
+      heroHtml = `
+        <pre class="pp-hero-text-preview is-loading" id="ppHeroTextPreview"><svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; color: var(--accent);"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg><span>Loading preview...</span></pre>
+      `;
     } else {
       heroHtml = `<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">${getFileIcon(item)}</div>`;
     }
@@ -2581,7 +2808,7 @@
         </div>
         <div class="pp-info-table">
           <span class="pp-info-label">Original Location</span>
-          <span class="pp-info-val" style="word-break: break-all; font-size: 11px;">${escapeHtml(item.originalLocation || item.originalPath || '--')}</span>
+          <span class="pp-info-val pp-info-copyable" data-copy="${escapeHtml(item.originalLocation || item.originalPath || '')}" title="Click to copy original location" style="word-break: break-all; font-size: 11px; cursor: pointer;">${escapeHtml(item.originalLocation || item.originalPath || '--')}</span>
           <span class="pp-info-label">Date Deleted</span>
           <span class="pp-info-val">${formatDateFull(item.mtime)}</span>
           <span class="pp-info-label">Kind</span>
@@ -2619,7 +2846,7 @@
           <span class="pp-info-val">${formatDateFull(item.atime || item.mtime)}</span>
           ${isImage ? `
             <span class="pp-info-label">Dimensions</span>
-            <span class="pp-info-val" id="ppInfoDimensions">Calculating...</span>
+            <span class="pp-info-val pp-info-copyable" id="ppInfoDimensions" title="Click to copy dimensions" style="cursor: pointer;">Calculating...</span>
           ` : ''}
           ${state.inspectorExpanded ? `
             <span class="pp-info-label">Kind</span>
@@ -2627,7 +2854,10 @@
             <span class="pp-info-label">Size</span>
             <span class="pp-info-val">${item.isDirectory ? 'Folder' : formatBytes(item.size)}</span>
             <span class="pp-info-label">Location</span>
-            <span class="pp-info-val" style="font-size: 11px;">${item.path}</span>
+            <span class="pp-info-val pp-info-copyable" data-copy="${escapeHtml(item.path)}" title="Click to copy path" style="font-size: 11px; cursor: pointer;">
+              ${escapeHtml(item.path)}
+              <svg class="icon pp-copy-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 11px; height: 11px; margin-left: 4px; vertical-align: middle; opacity: 0.6;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </span>
           ` : ''}
         </div>
       </div>
@@ -2647,7 +2877,10 @@
       </div>
 
       <div>
-        <div class="pp-section-title">Quick Actions</div>`}
+        <div class="pp-section-header">
+          <span class="pp-section-title">Quick Actions</span>
+          <button class="pp-toggle-link" id="ppBtnMore" title="More Actions">More...</button>
+        </div>`}
         ${!item.isDirectory && isArchiveFile(item) ? `
           <div class="pp-quick-actions-grid">
             <button class="pp-action-btn" id="ppBtnExtractArchive" title="Extract All Files">
@@ -2658,9 +2891,9 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <span>Inspect</span>
             </button>
-            <button class="pp-action-btn" id="ppBtnMore" title="More Actions">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
-              <span>More...</span>
+            <button class="pp-action-btn" id="ppBtnCopyPath" title="Copy File Path">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy Path</span>
             </button>
           </div>
           <div class="pp-footer-hint">Compressed archive. Click Extract All to unpack into a folder.</div>
@@ -2668,7 +2901,7 @@
           <div class="pp-quick-actions-grid">
             <button class="pp-action-btn" id="ppBtnVlcPlay" title="${state.vlcInstalled ? 'Play in VLC Player' : 'Play in Default Player'}">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #f97316;"><path d="M12 2l-7 16h14L12 2z" stroke="#f97316" fill="#f97316" fill-opacity="0.15"/><line x1="8.5" y1="10" x2="15.5" y2="10" stroke="#f97316"/><line x1="6.8" y1="14" x2="17.2" y2="14" stroke="#f97316"/><path d="M3 20c0 1.1 4 2 9 2s9-.9 9-2" stroke="#ea580c"/></svg>
-              <span>${state.vlcInstalled ? 'Play in VLC' : 'Play Media'}</span>
+              <span>${state.vlcInstalled ? 'Play in VLC' : 'Play'}</span>
             </button>
             <button class="pp-action-btn" id="ppBtnVlcEnqueue" title="${state.vlcInstalled ? 'Add to VLC Playlist' : 'Quick Look Preview'}">
               ${state.vlcInstalled
@@ -2676,28 +2909,44 @@
                 : `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Preview</span>`
               }
             </button>
-            <button class="pp-action-btn" id="ppBtnMore" title="More Actions">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
-              <span>More...</span>
+            <button class="pp-action-btn" id="ppBtnCopyPath" title="Copy Media Path">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy Path</span>
             </button>
           </div>
           <div class="pp-footer-hint">${state.vlcInstalled ? 'Hardware accelerated playback via VLC Player.' : 'Plays smoothly via system default media player.'}</div>
-        ` : `
+        ` : isImage ? `
           <div class="pp-quick-actions-grid">
             <button class="pp-action-btn" id="ppBtnRotate" title="Rotate 90° Clockwise">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-              <span>Rotate Right</span>
+              <span>Rotate 90°</span>
             </button>
             <button class="pp-action-btn" id="ppBtnMarkup" title="Quick Look Preview (Space)">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <span>Preview</span>
             </button>
-            <button class="pp-action-btn" id="ppBtnMore" title="More Actions">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>
-              <span>More...</span>
+            <button class="pp-action-btn" id="ppBtnCopyPath" title="Copy Image Path">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy Path</span>
             </button>
           </div>
           <div class="pp-footer-hint">Inspect details, preview media, and manage file tags.</div>
+        ` : `
+          <div class="pp-quick-actions-grid">
+            <button class="pp-action-btn" id="ppBtnOpen" title="${item.isDirectory ? 'Open folder' : 'Open with default application'}">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span>Open</span>
+            </button>
+            <button class="pp-action-btn" id="ppBtnMarkup" title="Quick Look Preview (Space)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Preview</span>
+            </button>
+            <button class="pp-action-btn" id="ppBtnCopyPath" title="Copy Path to Clipboard">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy Path</span>
+            </button>
+          </div>
+          <div class="pp-footer-hint">Inspect details, preview contents, and manage file tags.</div>
         `}
       </div>
     `;
@@ -2762,11 +3011,15 @@
       if (ppTextPreview) {
         api.readFileContent(item.path).then(preview => {
           if (state.activeItem && state.activeItem.path === item.path && ppTextPreview) {
+            ppTextPreview.classList.remove('is-loading');
             const lines = (preview.content || '').split('\n').slice(0, 14).join('\n');
             ppTextPreview.textContent = lines || '(Empty file)';
           }
         }).catch(() => {
-          if (ppTextPreview) ppTextPreview.textContent = '(Preview unavailable)';
+          if (ppTextPreview) {
+            ppTextPreview.classList.remove('is-loading');
+            ppTextPreview.textContent = '(Preview unavailable)';
+          }
         });
       }
     }
@@ -2823,6 +3076,40 @@
     if (btnExtractArchive) {
       btnExtractArchive.addEventListener('click', () => performExtractArchive(item, false));
     }
+
+    const btnOpen = el.previewPaneBody.querySelector('#ppBtnOpen');
+    if (btnOpen) {
+      btnOpen.addEventListener('click', () => {
+        if (item.isDirectory) {
+          navigateTo(item.path);
+        } else {
+          api.openItem(item.path);
+        }
+      });
+    }
+
+    const btnCopyPath = el.previewPaneBody.querySelector('#ppBtnCopyPath');
+    if (btnCopyPath) {
+      btnCopyPath.addEventListener('click', () => {
+        navigator.clipboard.writeText(item.path);
+        if (typeof showToast === 'function') {
+          showToast('Path copied to clipboard', 'success');
+        }
+      });
+    }
+
+    // Interactive click-to-copy on metadata values
+    el.previewPaneBody.querySelectorAll('.pp-info-copyable').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const textToCopy = cell.dataset.copy || cell.textContent.trim();
+        if (textToCopy && textToCopy !== 'Calculating...' && textToCopy !== '--') {
+          navigator.clipboard.writeText(textToCopy);
+          if (typeof showToast === 'function') {
+            showToast('Copied to clipboard', 'success');
+          }
+        }
+      });
+    });
 
     const btnMarkup = el.previewPaneBody.querySelector('#ppBtnMarkup');
     if (btnMarkup) {
@@ -4034,19 +4321,7 @@
             subLabel = cnt === 0 ? 'Zero items' : (cnt === 1 ? '1 item' : `${cnt} items`);
           } else {
             subLabel = 'Folder';
-            if (!state.folderItemCounts) state.folderItemCounts = new Map();
-            if (api && api.getFileDetails) {
-              api.getFileDetails(item.path).then(res => {
-                if (res && res.success && res.fileCount !== undefined) {
-                  state.folderItemCounts.set(item.path, res.fileCount);
-                  const subEl = itemEl.querySelector('.grid-sub');
-                  if (subEl && itemEl.isConnected) {
-                    const cnt = res.fileCount;
-                    subEl.textContent = cnt === 0 ? 'Zero items' : (cnt === 1 ? '1 item' : `${cnt} items`);
-                  }
-                }
-              }).catch(() => {});
-            }
+            queueFolderCount(item.path, itemEl);
           }
         } else if (isImageFile(item)) {
           if (state.imageDimensions && state.imageDimensions.has(item.path)) {
@@ -4399,8 +4674,22 @@
     el.quickLookOverlay.style.display = 'flex';
 
     el.qlTitle.textContent = item.name;
+    el.qlTitle.title = "Click to copy filename";
+    el.qlTitle.style.cursor = "pointer";
+    el.qlTitle.onclick = () => {
+      navigator.clipboard.writeText(item.name);
+      if (typeof showToast === 'function') showToast('Filename copied to clipboard', 'success');
+    };
+
     el.qlSubtitle.textContent = `${formatBytes(item.size)} · Modified ${formatDate(item.mtime)}`;
+
     el.qlLocation.textContent = item.path;
+    el.qlLocation.title = "Click to copy path";
+    el.qlLocation.style.cursor = "pointer";
+    el.qlLocation.onclick = () => {
+      navigator.clipboard.writeText(item.path);
+      if (typeof showToast === 'function') showToast('Path copied to clipboard', 'success');
+    };
 
     // Update position index indicator (e.g. 3 of 24)
     if (el.qlIndexIndicator && state.items && state.items.length > 0) {
@@ -4435,10 +4724,10 @@
     const currentTag = state.tags[item.path] || '';
     el.qlCurrentTagDot.className = `tag-dot ${currentTag}`;
 
-    // Render loading indicator
+    // Render centered loading indicator
     el.qlBody.innerHTML = `
-      <div style="color: var(--text-dim); display: flex; align-items: center; gap: 8px;">
-        <svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+      <div class="ql-loading-state">
+        <svg class="icon spin ql-loading-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
         <span>Loading preview...</span>
       </div>
     `;
@@ -5945,160 +6234,394 @@
   }
 
   function showDriveContextMenu(x, y, drive) {
-    const isEjectable = drive.letter !== 'C';
-    const old = document.querySelector('.drive-context-menu');
-    if (old) old.remove();
+    if (!drive) return;
+    hideContextMenu();
 
+    const isEjectable = Boolean(drive.isRemovable || drive.driveType === 2 || drive.driveType === 5);
     const menu = document.createElement('div');
     menu.className = 'context-menu drive-context-menu';
-    menu.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; display: flex; flex-direction: column; z-index: 10000; min-width: 180px;`;
+    menu.style.cssText = `position: fixed; display: flex; flex-direction: column; z-index: 10000; min-width: 210px; visibility: hidden;`;
 
     menu.innerHTML = `
-      <div class="context-item" id="driveCtxOpen">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      <div class="ctx-item" id="driveCtxOpen">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </span>
         <span>Open in New Tab</span>
       </div>
-      <div class="context-item" id="driveCtxManage">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <div class="ctx-item" id="driveCtxNewWindow">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </span>
+        <span>Open in New Window</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="driveCtxManage">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </span>
         <span>Manage Storage</span>
       </div>
-      <div class="context-item" id="driveCtxChkdsk">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      <div class="ctx-item" id="driveCtxChkdsk">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </span>
         <span>Check File System (Chkdsk)</span>
       </div>
-      <div class="context-item" id="driveCtxCleanup">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+      <div class="ctx-item" id="driveCtxCleanup">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </span>
         <span>Disk Cleanup</span>
       </div>
-      <div class="context-item" id="driveCtxOptimize">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>
+      <div class="ctx-item" id="driveCtxOptimize">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>
+        </span>
         <span>Defrag & Optimize</span>
       </div>
-      <div class="context-item" id="driveCtxFormat">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/></svg>
+      <div class="ctx-item" id="driveCtxFormat">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/></svg>
+        </span>
         <span>Format Volume...</span>
       </div>
       ${isEjectable ? `
-        <div class="context-divider"></div>
-        <div class="context-item" id="driveCtxEject">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 4 4 14 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" id="driveCtxEject">
+          <span class="ctx-icon">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 4 4 14 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </span>
           <span>Eject (${drive.letter}:)</span>
         </div>
       ` : ''}
-      <div class="context-divider"></div>
-      <div class="context-item" id="driveCtxProperties">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="driveCtxCopyPath">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>
+        <span>Copy Path</span>
+      </div>
+      <div class="ctx-item" id="driveCtxProperties">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </span>
         <span>Properties</span>
       </div>
     `;
 
     document.body.appendChild(menu);
+    const rect = menu.getBoundingClientRect();
+    const posX = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+    const posY = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+    menu.style.left = `${Math.round(posX)}px`;
+    menu.style.top = `${Math.round(posY)}px`;
+    menu.style.visibility = 'visible';
 
-    const onDocClick = (e) => {
+    const closeMenu = (e) => {
       if (!menu.contains(e.target)) {
         menu.remove();
-        document.removeEventListener('click', onDocClick);
+        document.removeEventListener('pointerdown', closeMenu);
+        document.removeEventListener('keydown', handleEsc);
       }
     };
-    setTimeout(() => document.addEventListener('click', onDocClick), 10);
-
-    const openItem = menu.querySelector('#driveCtxOpen');
-    if (openItem) {
-      openItem.addEventListener('click', () => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
         menu.remove();
-        createTab(drive.path);
-      });
-    }
+        document.removeEventListener('pointerdown', closeMenu);
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('pointerdown', closeMenu);
+      document.addEventListener('keydown', handleEsc);
+    }, 20);
 
-    const manageItem = menu.querySelector('#driveCtxManage');
-    if (manageItem) {
-      manageItem.addEventListener('click', () => {
-        menu.remove();
-        openStorageModal(drive.path);
-      });
-    }
-
-    const chkdskItem = menu.querySelector('#driveCtxChkdsk');
-    if (chkdskItem) {
-      chkdskItem.addEventListener('click', async () => {
-        menu.remove();
-        showToast(`Running filesystem integrity check on (${drive.letter}:)...`, 'info');
-        await api.launchWindowsTool('chkdsk', drive.letter);
-      });
-    }
-
-    const cleanupItem = menu.querySelector('#driveCtxCleanup');
-    if (cleanupItem) {
-      cleanupItem.addEventListener('click', async () => {
-        menu.remove();
-        showToast(`Opening Disk Cleanup for (${drive.letter}:)...`, 'info');
-        await api.launchWindowsTool('cleanmgr', drive.letter);
-      });
-    }
-
-    const optimizeItem = menu.querySelector('#driveCtxOptimize');
-    if (optimizeItem) {
-      optimizeItem.addEventListener('click', async () => {
-        menu.remove();
-        showToast('Opening Windows Drive Optimization & TRIM utility...', 'info');
-        await api.launchWindowsTool('dfrgui', drive.letter);
-      });
-    }
-
-    const formatItem = menu.querySelector('#driveCtxFormat');
-    if (formatItem) {
-      formatItem.addEventListener('click', async () => {
-        menu.remove();
-        if (drive.letter === 'C') {
-          showToast('Cannot format Windows OS system drive', 'warning');
-          return;
-        }
-        showConfirmModal(
-          `Format Drive (${drive.letter}:)?`,
-          `Formatting will erase ALL data on volume "${drive.label}" (${drive.letter}:). You can launch Windows Disk Management to perform a secure format.`,
-          async () => {
-            await api.launchWindowsTool('diskmgmt', drive.letter);
-          }
-        );
-      });
-    }
-
-    if (isEjectable) {
-      const ejectItem = menu.querySelector('#driveCtxEject');
-      if (ejectItem) {
-        ejectItem.addEventListener('click', async () => {
+    const onAction = (sel, fn) => {
+      const elBtn = menu.querySelector(sel);
+      if (elBtn) {
+        elBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
           menu.remove();
-          try {
-            const res = await api.ejectDrive(drive.letter);
-            if (res && res.success) {
-              showToast(`Drive (${drive.letter}:) safely ejected`, 'info');
-              if (state.currentPath.toUpperCase().startsWith(drive.letter.toUpperCase() + ':')) {
-                navigateTo('C:\\');
-              }
-              await loadInitialData();
-            } else {
-              showToast(`Could not eject (${drive.letter}:) - Drive is currently in use`, 'warning');
-            }
-          } catch (err) {
-            showToast(`Error ejecting (${drive.letter}:): ${err.message}`, 'error');
-          }
+          fn();
         });
       }
-    }
+    };
 
-    const propItem = menu.querySelector('#driveCtxProperties');
-    if (propItem) {
-      propItem.addEventListener('click', () => {
-        menu.remove();
-        openPropertiesModal({
-          name: drive.label,
-          path: drive.path,
-          isDirectory: true,
-          size: drive.totalBytes,
-          mtime: null
-        });
+    onAction('#driveCtxOpen', () => createTab(drive.path));
+    onAction('#driveCtxNewWindow', () => openNewWindow(drive.path));
+    onAction('#driveCtxManage', () => openStorageModal(drive.path));
+    onAction('#driveCtxChkdsk', async () => {
+      showToast(`Running filesystem integrity check on (${drive.letter}:)...`, 'info');
+      await api.launchWindowsTool('chkdsk', drive.letter);
+    });
+    onAction('#driveCtxCleanup', async () => {
+      showToast(`Opening Disk Cleanup for (${drive.letter}:)...`, 'info');
+      await api.launchWindowsTool('cleanmgr', drive.letter);
+    });
+    onAction('#driveCtxOptimize', async () => {
+      showToast('Opening Windows Drive Optimization & TRIM utility...', 'info');
+      await api.launchWindowsTool('dfrgui', drive.letter);
+    });
+    onAction('#driveCtxFormat', () => {
+      if (drive.letter === 'C') {
+        showToast('Cannot format Windows OS system drive', 'warning');
+        return;
+      }
+      showConfirmModal(
+        `Format Drive (${drive.letter}:)?`,
+        `Formatting will erase ALL data on volume "${drive.label}" (${drive.letter}:). You can launch Windows Disk Management to perform a secure format.`,
+        async () => {
+          await api.launchWindowsTool('diskmgmt', drive.letter);
+        }
+      );
+    });
+    if (isEjectable) {
+      onAction('#driveCtxEject', async () => {
+        try {
+          const res = await api.ejectDrive(drive.letter);
+          if (res && res.success) {
+            showToast(`Drive (${drive.letter}:) safely ejected`, 'info');
+            if (state.currentPath.toUpperCase().startsWith(drive.letter.toUpperCase() + ':')) {
+              navigateTo('C:\\');
+            }
+            await loadInitialData();
+          } else {
+            showToast(`Could not eject (${drive.letter}:) - Drive is currently in use`, 'warning');
+          }
+        } catch (err) {
+          showToast(`Error ejecting (${drive.letter}:): ${err.message}`, 'error');
+        }
       });
     }
+    onAction('#driveCtxCopyPath', () => {
+      navigator.clipboard.writeText(drive.path).then(() => {
+        showToast('Drive path copied to clipboard', 'info');
+      }).catch(() => {});
+    });
+    onAction('#driveCtxProperties', () => {
+      openPropertiesModal({
+        name: drive.label,
+        path: drive.path,
+        isDirectory: true,
+        size: drive.totalBytes,
+        mtime: null
+      });
+    });
+  }
+
+  function showSidebarFolderContextMenu(x, y, folderInfo) {
+    if (!folderInfo || !folderInfo.path) return;
+    hideContextMenu();
+
+    const menu = document.createElement('div');
+    menu.id = 'sidebarFolderContextMenu';
+    menu.className = 'context-menu sidebar-context-menu';
+    menu.style.cssText = `position: fixed; display: flex; flex-direction: column; z-index: 10000; min-width: 200px; visibility: hidden;`;
+
+    const isPinned = Boolean(folderInfo.isPinned);
+    const pinIndex = folderInfo.pinIndex;
+    const itemPath = folderInfo.path;
+    const itemName = folderInfo.name || itemPath.split(/[\\/]/).filter(Boolean).pop() || itemPath;
+
+    menu.innerHTML = `
+      <div class="ctx-item" id="sbCtxOpen">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+        </span>
+        <span>Open</span>
+      </div>
+      <div class="ctx-item" id="sbCtxNewTab">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </span>
+        <span>Open in New Tab</span>
+      </div>
+      <div class="ctx-item" id="sbCtxNewWindow">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </span>
+        <span>Open in New Window</span>
+      </div>
+      <div class="ctx-divider"></div>
+      ${isPinned ? `
+        <div class="ctx-item danger" id="sbCtxUnpin">
+          <span class="ctx-icon">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </span>
+          <span>Remove from Sidebar</span>
+        </div>
+      ` : `
+        <div class="ctx-item" id="sbCtxPin">
+          <span class="ctx-icon">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"/></svg>
+          </span>
+          <span>Pin to Sidebar</span>
+        </div>
+      `}
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="sbCtxCopyPath">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>
+        <span>Copy Path</span>
+      </div>
+      <div class="ctx-item" id="sbCtxTerminal">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </span>
+        <span>Open in Terminal</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="sbCtxProperties">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </span>
+        <span>Get Info</span>
+      </div>
+    `;
+
+    document.body.appendChild(menu);
+    const rect = menu.getBoundingClientRect();
+    const posX = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+    const posY = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+    menu.style.left = `${Math.round(posX)}px`;
+    menu.style.top = `${Math.round(posY)}px`;
+    menu.style.visibility = 'visible';
+
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('pointerdown', closeMenu);
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        menu.remove();
+        document.removeEventListener('pointerdown', closeMenu);
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('pointerdown', closeMenu);
+      document.addEventListener('keydown', handleEsc);
+    }, 20);
+
+    const onAction = (sel, fn) => {
+      const elBtn = menu.querySelector(sel);
+      if (elBtn) {
+        elBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.remove();
+          fn();
+        });
+      }
+    };
+
+    onAction('#sbCtxOpen', () => navigateTo(itemPath));
+    onAction('#sbCtxNewTab', () => createTab(itemPath));
+    onAction('#sbCtxNewWindow', () => openNewWindow(itemPath));
+    if (isPinned) {
+      onAction('#sbCtxUnpin', () => unpinSidebarItem(pinIndex));
+    } else {
+      onAction('#sbCtxPin', () => pinFolderToSidebar(itemPath));
+    }
+    onAction('#sbCtxCopyPath', () => {
+      navigator.clipboard.writeText(itemPath).then(() => {
+        showToast('Path copied to clipboard', 'info');
+      }).catch(() => {});
+    });
+    onAction('#sbCtxTerminal', () => {
+      if (api.openTerminal) api.openTerminal(itemPath, state.terminalChoice);
+    });
+    onAction('#sbCtxProperties', () => {
+      openGetInfoModal({
+        name: itemName,
+        path: itemPath,
+        isDirectory: true
+      });
+    });
+  }
+
+  function showSidebarBackgroundContextMenu(x, y) {
+    hideContextMenu();
+
+    const menu = document.createElement('div');
+    menu.id = 'sidebarBgContextMenu';
+    menu.className = 'context-menu sidebar-context-menu';
+    menu.style.cssText = `position: fixed; display: flex; flex-direction: column; z-index: 10000; min-width: 195px; visibility: hidden;`;
+
+    menu.innerHTML = `
+      <div class="ctx-item" id="sbBgCustomize">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </span>
+        <span>Sidebar Preferences...</span>
+      </div>
+      <div class="ctx-item" id="sbBgStorage">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>
+        </span>
+        <span>Manage Storage</span>
+      </div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" id="sbBgNewTab">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </span>
+        <span>New Tab</span>
+      </div>
+      <div class="ctx-item" id="sbBgNewWindow">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </span>
+        <span>New Window</span>
+      </div>
+    `;
+
+    document.body.appendChild(menu);
+    const rect = menu.getBoundingClientRect();
+    const posX = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+    const posY = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+    menu.style.left = `${Math.round(posX)}px`;
+    menu.style.top = `${Math.round(posY)}px`;
+    menu.style.visibility = 'visible';
+
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('pointerdown', closeMenu);
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        menu.remove();
+        document.removeEventListener('pointerdown', closeMenu);
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('pointerdown', closeMenu);
+      document.addEventListener('keydown', handleEsc);
+    }, 20);
+
+    const onAction = (sel, fn) => {
+      const elBtn = menu.querySelector(sel);
+      if (elBtn) {
+        elBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.remove();
+          fn();
+        });
+      }
+    };
+
+    onAction('#sbBgCustomize', () => openSettingsModal('sidebar'));
+    onAction('#sbBgStorage', () => openStorageModal());
+    onAction('#sbBgNewTab', () => createTab(state.homePath || 'C:\\'));
+    onAction('#sbBgNewWindow', () => openNewWindow(state.homePath || 'C:\\'));
   }
 
   function formatDriveDisplayName(drive) {
@@ -6122,7 +6645,7 @@
       li.dataset.path = drive.path;
 
       const pct = drive.totalBytes > 0 ? Math.round((drive.usedBytes / drive.totalBytes) * 100) : 0;
-      const isEjectable = drive.letter !== 'C';
+      const isEjectable = Boolean(drive.isRemovable || drive.driveType === 2 || drive.driveType === 5);
       const ejectBtnHtml = isEjectable
         ? `<button class="sidebar-drive-eject" title="Safely Eject ${drive.letter}:" aria-label="Eject ${drive.letter}:">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px; display: block;"><polygon points="12 4 4 14 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -6132,9 +6655,23 @@
       const displayName = formatDriveDisplayName(drive);
       li.title = `${displayName} (${pct}% used, ${formatBytes(drive.freeBytes)} free)`;
 
+      const letter = drive.letter || (drive.path ? drive.path.charAt(0).toUpperCase() : '');
+      let baseLabel = (drive.label || (letter === 'C' ? 'OS Disk' : (drive.isRemovable ? 'USB Drive' : 'Local Drive'))).trim();
+      if (letter) {
+        baseLabel = baseLabel.replace(new RegExp(`\\s*\\(${letter}:\\)`, 'gi'), '').trim();
+      }
+
       li.innerHTML = `
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg>
-        <span class="sidebar-item-label">${displayName}</span>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ${isEjectable
+            ? '<path d="M4 17h16M4 12h16M12 4v8m-4-4l4-4 4 4"/>'
+            : '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/>'
+          }
+        </svg>
+        <span class="sidebar-item-label sidebar-drive-item-label">
+          <span class="sidebar-drive-name">${baseLabel}</span>
+          <span class="sidebar-drive-letter">(${letter}:)</span>
+        </span>
         <div class="sidebar-drive-gauge" title="${pct}% used (${formatBytes(drive.freeBytes)} free)">
           <div class="sidebar-drive-fill" style="width: ${pct}%;"></div>
         </div>
@@ -6186,39 +6723,47 @@
     };
     const home = state.homePath || getSpecialPath('home', 'C:\\');
 
+    const setupFavoriteItem = (element, targetPath, name) => {
+      if (!element) return;
+      element.dataset.path = targetPath;
+      element.onclick = () => navigateTo(targetPath);
+      element.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showSidebarFolderContextMenu(e.clientX, e.clientY, {
+          name,
+          path: targetPath,
+          isPinned: false
+        });
+      });
+    };
+
     if (el.sidebarRecents) {
       const recentPath = getSpecialPath('recents', home + '\\AppData\\Roaming\\Microsoft\\Windows\\Recent');
-      el.sidebarRecents.dataset.path = recentPath;
-      el.sidebarRecents.onclick = () => navigateTo(recentPath);
+      setupFavoriteItem(el.sidebarRecents, recentPath, 'Recents');
     }
     if (el.sidebarShared) {
       const sharedPath = getSpecialPath('shared', 'C:\\Users\\Public');
-      el.sidebarShared.dataset.path = sharedPath;
-      el.sidebarShared.onclick = () => navigateTo(sharedPath);
+      setupFavoriteItem(el.sidebarShared, sharedPath, 'Shared');
     }
     if (el.sidebarHome) {
-      el.sidebarHome.dataset.path = home;
-      el.sidebarHome.onclick = () => navigateTo(home);
+      setupFavoriteItem(el.sidebarHome, home, 'Home');
     }
     if (el.sidebarDesktop) {
       const deskPath = getSpecialPath('desktop', home + '\\Desktop');
-      el.sidebarDesktop.dataset.path = deskPath;
-      el.sidebarDesktop.onclick = () => navigateTo(deskPath);
+      setupFavoriteItem(el.sidebarDesktop, deskPath, 'Desktop');
     }
     if (el.sidebarDocuments) {
       const docPath = getSpecialPath('documents', home + '\\Documents');
-      el.sidebarDocuments.dataset.path = docPath;
-      el.sidebarDocuments.onclick = () => navigateTo(docPath);
+      setupFavoriteItem(el.sidebarDocuments, docPath, 'Documents');
     }
     if (el.sidebarDownloads) {
       const dlPath = getSpecialPath('downloads', home + '\\Downloads');
-      el.sidebarDownloads.dataset.path = dlPath;
-      el.sidebarDownloads.onclick = () => navigateTo(dlPath);
+      setupFavoriteItem(el.sidebarDownloads, dlPath, 'Downloads');
     }
     if (el.sidebarPictures) {
       const picPath = getSpecialPath('pictures', home + '\\Pictures');
-      el.sidebarPictures.dataset.path = picPath;
-      el.sidebarPictures.onclick = () => navigateTo(picPath);
+      setupFavoriteItem(el.sidebarPictures, picPath, 'Pictures');
     }
     if (el.sidebarRecycleBin) {
       el.sidebarRecycleBin.dataset.special = 'recycle-bin';
@@ -6233,13 +6778,22 @@
     }
     if (el.sidebarApps) {
       const appsPath = getSpecialPath('applications', 'C:\\Program Files');
-      el.sidebarApps.dataset.path = appsPath;
-      el.sidebarApps.onclick = () => navigateTo(appsPath);
+      setupFavoriteItem(el.sidebarApps, appsPath, 'Applications');
     }
     if (el.sidebarCloud) {
       const cloudPath = getSpecialPath('cloud', home + '\\OneDrive');
-      el.sidebarCloud.dataset.path = cloudPath;
-      el.sidebarCloud.onclick = () => navigateTo(cloudPath);
+      setupFavoriteItem(el.sidebarCloud, cloudPath, 'OneDrive');
+    }
+
+    if (el.sidebar) {
+      el.sidebar.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('.sidebar-item, .sidebar-drive-eject, .sidebar-add-pin, .tag-item, button, input')) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        showSidebarBackgroundContextMenu(e.clientX, e.clientY);
+      });
     }
   }
 
@@ -6567,10 +7121,16 @@
         }
       });
 
-      // Right-click unpin
+      // Right-click context menu
       li.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        unpinSidebarItem(idx);
+        e.stopPropagation();
+        showSidebarFolderContextMenu(e.clientX, e.clientY, {
+          name: pin.name || 'Pinned Folder',
+          path: pin.path,
+          isPinned: true,
+          pinIndex: idx
+        });
       });
 
       el.sidebarPinsList.appendChild(li);
@@ -7035,6 +7595,16 @@
     if (el.contextMenu) el.contextMenu.style.display = 'none';
     const tabMenu = document.getElementById('tabContextMenu');
     if (tabMenu) tabMenu.style.display = 'none';
+    const driveMenu = document.querySelector('.drive-context-menu');
+    if (driveMenu) driveMenu.remove();
+    const recycleMenu = document.getElementById('recycleContextMenu');
+    if (recycleMenu) recycleMenu.remove();
+    const sbFolderMenu = document.getElementById('sidebarFolderContextMenu');
+    if (sbFolderMenu) sbFolderMenu.remove();
+    const sbBgMenu = document.getElementById('sidebarBgContextMenu');
+    if (sbBgMenu) sbBgMenu.remove();
+    const listColMenu = document.getElementById('listColumnContextMenu');
+    if (listColMenu) listColMenu.style.display = 'none';
   }
 
   // --- FILE CREATION & MODALS ---
@@ -7268,7 +7838,7 @@
     }
   }
 
-  function openSettingsModal() {
+  function openSettingsModal(preferredTab) {
     if (!el.settingsModal) return;
     el.settingsModal.style.display = 'flex';
     updateDefaultFileManagerButtons(state.isDefaultFileManager);
@@ -7410,6 +7980,13 @@
 
       // Ensure active tab and corresponding panel match
       if (el.settingsTabBar) {
+        if (preferredTab) {
+          const tabBtn = el.settingsTabBar.querySelector(`.settings-tab-btn[data-tab="${preferredTab}"]`);
+          if (tabBtn) {
+            el.settingsTabBar.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+            tabBtn.classList.add('active');
+          }
+        }
         const activeTabBtn = el.settingsTabBar.querySelector('.settings-tab-btn.active') || el.settingsTabBar.querySelector('.settings-tab-btn');
         const targetTab = activeTabBtn ? activeTabBtn.dataset.tab : 'general';
         const panels = {
@@ -12568,7 +13145,7 @@
     if (lastGlassPointerRaf) return;
     lastGlassPointerRaf = requestAnimationFrame(() => {
       lastGlassPointerRaf = 0;
-      const target = e.target && e.target.closest && e.target.closest('.view-switcher, .quicklook-dialog, .modal-card, .context-menu, .settings-modal, .properties-card, .column-pane');
+      const target = e.target && e.target.closest && e.target.closest('.view-switcher, .quicklook-dialog, .modal-card, .context-menu, .settings-modal, .properties-card');
       if (target) {
         const rect = target.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {

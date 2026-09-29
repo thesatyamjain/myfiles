@@ -55,12 +55,65 @@ const TEXT_EXTENSIONS = [
 ];
 const ARCHIVE_EXTENSIONS = ['.zip', '.tar', '.gz', '.tgz', '.bz2', '.xz', '.7z', '.rar'];
 
+// Cache for Windows drive metadata (volume names & drive types)
+let winDriveCache = new Map();
+let lastDriveCacheTime = 0;
+
+function refreshWindowsDrivesInfo() {
+  if (process.platform !== 'win32') return;
+  const now = Date.now();
+  if (winDriveCache.size > 0 && (now - lastDriveCacheTime < 30000)) {
+    return;
+  }
+  try {
+    const cp = exec('wmic logicaldisk get DeviceID,DriveType,VolumeName', { timeout: 3000 }, (err, stdout) => {
+      if (!err && stdout) {
+        try {
+          const lines = stdout.trim().split(/\r?\n/).slice(1);
+          const nextMap = new Map();
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) continue;
+            const parts = line.split(/\s+/);
+            if (parts.length >= 2 && /^[A-Z]:$/i.test(parts[0])) {
+              const letter = parts[0].charAt(0).toUpperCase();
+              const driveType = parseInt(parts[1], 10) || 3;
+              const volumeName = parts.slice(2).join(' ').trim();
+              nextMap.set(letter, {
+                volumeName,
+                driveType,
+                isRemovable: driveType === 2 || driveType === 5
+              });
+            }
+          }
+          if (nextMap.size > 0) {
+            winDriveCache = nextMap;
+            lastDriveCacheTime = Date.now();
+          }
+        } catch {}
+      }
+    });
+    if (cp && typeof cp.unref === 'function') {
+      cp.unref();
+    }
+  } catch {}
+}
+
+// Prime drive info on module load without blocking
+if (process.platform === 'win32') {
+  refreshWindowsDrivesInfo();
+}
+
 /**
  * Detect all mounted logical drives with storage metrics
  */
 async function getDrives() {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const drives = [];
+
+  if (process.platform === 'win32') {
+    refreshWindowsDrivesInfo();
+  }
 
   for (const letter of letters) {
     const rootPath = `${letter}:\\`;
@@ -74,13 +127,34 @@ async function getDrives() {
           totalBytes = Number(stat.blocks) * Number(stat.bsize);
         } catch {}
 
+        const info = winDriveCache.get(letter);
+        const driveType = info ? info.driveType : (letter === 'C' ? 3 : 3);
+        const isRemovable = info ? info.isRemovable : false;
+
+        let label = '';
+        if (info && info.volumeName) {
+          label = info.volumeName;
+        } else if (letter === 'C') {
+          label = 'OS Disk';
+        } else if (isRemovable) {
+          label = 'USB Drive';
+        } else if (driveType === 4) {
+          label = 'Network Drive';
+        } else if (driveType === 5) {
+          label = 'CD/DVD Drive';
+        } else {
+          label = 'Local Drive';
+        }
+
         drives.push({
           letter,
           path: rootPath,
-          label: letter === 'C' ? 'OS Disk' : 'Local Drive',
+          label,
           freeBytes,
           totalBytes,
-          usedBytes: totalBytes > freeBytes ? totalBytes - freeBytes : 0
+          usedBytes: totalBytes > freeBytes ? totalBytes - freeBytes : 0,
+          driveType,
+          isRemovable
         });
       }
     } catch {}
@@ -154,6 +228,26 @@ function resolvePath(rawPath) {
   return path.resolve(p);
 }
 
+const dirReadCache = new Map();
+const DIR_CACHE_TTL_MS = 3000;
+
+function invalidateDirCache(targetPath) {
+  if (!targetPath) {
+    dirReadCache.clear();
+    return;
+  }
+  try {
+    const resolved = resolvePath(targetPath);
+    dirReadCache.delete(resolved);
+    const parent = path.dirname(resolved);
+    if (parent && parent !== resolved) {
+      dirReadCache.delete(parent);
+    }
+  } catch {
+    dirReadCache.clear();
+  }
+}
+
 /**
  * Read directory entries with full stats & metadata
  */
@@ -181,10 +275,21 @@ async function readDirectory(targetPath) {
   }
 
   const resolved = resolvePath(targetPath);
+  const now = Date.now();
+  const cached = dirReadCache.get(resolved);
+  if (cached && (now - cached.timestamp < DIR_CACHE_TTL_MS)) {
+    return {
+      success: true,
+      currentPath: cached.data.currentPath,
+      parentPath: cached.data.parentPath,
+      items: cached.data.items.slice()
+    };
+  }
+
   try {
     const dirents = await fs.promises.readdir(resolved, { withFileTypes: true });
     const items = [];
-    const CHUNK_SIZE = 64;
+    const CHUNK_SIZE = 256;
 
     for (let i = 0; i < dirents.length; i += CHUNK_SIZE) {
       const chunk = dirents.slice(i, i + CHUNK_SIZE);
@@ -229,12 +334,20 @@ async function readDirectory(targetPath) {
       items.push(...chunkResults);
     }
 
-    return {
+    const result = {
       success: true,
       currentPath: resolved,
       parentPath: path.dirname(resolved) !== resolved ? path.dirname(resolved) : null,
       items
     };
+
+    dirReadCache.set(resolved, { timestamp: now, data: result });
+    if (dirReadCache.size > 100) {
+      const oldestKey = dirReadCache.keys().next().value;
+      dirReadCache.delete(oldestKey);
+    }
+
+    return result;
   } catch (err) {
     return {
       success: false,
@@ -582,6 +695,7 @@ function watchDirectory(dirPath, onChange) {
   let timer = null;
   try {
     const watcher = fs.watch(dirPath, { persistent: false }, (eventType, filename) => {
+      invalidateDirCache(dirPath);
       clearTimeout(timer);
       timer = setTimeout(() => {
         onChange({ eventType, filename, dirPath });
@@ -788,6 +902,7 @@ module.exports = {
   getSpecialFolders,
   resolvePath,
   readDirectory,
+  invalidateDirCache,
   getFileDetails,
   getFileContent,
   calculateChecksum,

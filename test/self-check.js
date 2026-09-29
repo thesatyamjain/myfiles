@@ -1680,7 +1680,7 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   console.log(`✓ Whole-file syntax validation passed for all ${jsFilesToValidate.length} core JS files`);
 
   // 48. DOM Integrity & Element ID Parity Check
-  const dynamicTemplateIds = new Set(['backendOfflineBanner', 'btnRetryBackend', 'tabContextMenu', 'recycleContextMenu', 'galleryHeroImg', 'ppHeroThumb', 'listColumnContextMenu']);
+  const dynamicTemplateIds = new Set(['backendOfflineBanner', 'btnRetryBackend', 'tabContextMenu', 'recycleContextMenu', 'galleryHeroImg', 'ppHeroThumb', 'listColumnContextMenu', 'sidebarFolderContextMenu', 'sidebarBgContextMenu']);
   const idMatches = Array.from(updatedRenderer.matchAll(/document\.getElementById\(['"]([^'"]+)['"]\)/g)).map(m => m[1]);
   const missingFromHtml = idMatches.filter(id => !dynamicTemplateIds.has(id) && !updatedIndex.includes(`id="${id}"`) && !updatedIndex.includes(`id='${id}'`));
   if (missingFromHtml.length > 0) {
@@ -1832,6 +1832,45 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(mainCode.includes("backgroundMaterial: isWin11OrLater ? 'acrylic' : undefined"), 'main.js must configure Windows 11 acrylic material');
   assert(updatedRenderer.includes('lastGlassPointerRaf'), 'renderer.js must implement lightweight pointer specular glare tracker');
   console.log('✓ macOS Finder Liquid Glass Optical Materials Suite verified');
+
+  // 58. Preview Viewport & Inspector UX Parity Suite
+  assert(updatedRenderer.includes('renderMultiItemPreviewPane'), 'renderer.js must implement renderMultiItemPreviewPane for multi-selection inspector');
+  assert(updatedRenderer.includes('ppBtnOpenAll'), 'renderer.js must wire ppBtnOpenAll in multi-selection preview');
+  assert(updatedRenderer.includes('ppBtnCompressAll'), 'renderer.js must wire ppBtnCompressAll in multi-selection preview');
+  assert(updatedRenderer.includes('ppBtnCopyPathsAll'), 'renderer.js must wire ppBtnCopyPathsAll in multi-selection preview');
+  assert(updatedRenderer.includes('pp-empty-state-modern'), 'renderer.js must render high-polish modern empty state');
+  assert(updatedRenderer.includes('pp-info-copyable'), 'renderer.js must support copyable info rows');
+  assert(updatedRenderer.includes('ppBtnOpen'), 'renderer.js must wire ppBtnOpen for documents and generic files');
+  assert(updatedRenderer.includes('ppBtnCopyPath'), 'renderer.js must wire ppBtnCopyPath in preview pane');
+  assert(stylesCode.includes('.pp-empty-state-modern'), 'styles.css must style modern inspector empty state');
+  assert(stylesCode.includes('.pp-hero-multi'), 'styles.css must style multi-selection hero stack');
+  assert(stylesCode.includes('.pp-breakdown-chip'), 'styles.css must style breakdown chips');
+  assert(stylesCode.includes('.pp-info-copyable'), 'styles.css must style copyable info rows');
+  assert(updatedRenderer.includes("localStorage.setItem('myfiles_viewmode', mode)"), 'setViewMode must persist active view mode to localStorage');
+  assert(updatedRenderer.includes("tab.viewMode || state.viewMode || 'grid'"), 'switchTab must respect state.viewMode');
+  // 59. Drive Removable Differentiation, Pinned Drive Letter & Storage Menu Clamping Suite
+  assert(updatedRenderer.includes('sidebar-drive-item-label'), 'renderer.js must implement sidebar-drive-item-label');
+  assert(updatedRenderer.includes('sidebar-drive-letter'), 'renderer.js must implement sidebar-drive-letter for non-truncated letter badges');
+  assert(stylesCode.includes('.sidebar-drive-letter'), 'styles.css must style .sidebar-drive-letter with flex-shrink: 0');
+  assert(stylesCode.includes('.sidebar-drive-name'), 'styles.css must style .sidebar-drive-name with ellipsis truncation');
+  assert(updatedRenderer.includes('drive.isRemovable || drive.driveType === 2 || drive.driveType === 5'), 'renderer.js must only allow eject on true removable/optical drives');
+  const fsEngineCode = fs.readFileSync(path.join(__dirname, '..', 'fs-engine.js'), 'utf8');
+  // 60. List View Group Layout, Non-Clipping Headers & Viewport Scroll Isolation Suite
+  assert(stylesCode.includes('.list-container .view-group-header'), 'styles.css must style .list-container .view-group-header');
+  assert(stylesCode.includes('scroll-padding-top: 32px'), 'styles.css must define scroll-padding-top for list-container');
+  assert(stylesCode.includes('scroll-margin-top: 36px'), 'styles.css must define scroll-margin-top for list-row');
+  assert(updatedRenderer.includes("el.primaryViewport.querySelector('.list-container, .grouped-grid-wrapper"), 'renderer.js must cache scroll on actual scrollable viewport child');
+  console.log('✓ List View Group Layout, Non-Clipping Headers & Viewport Scroll Isolation Suite verified');
+
+  // 61. Preview Loading Centering & Liquid Glass Indicator Suite
+  const latestStyles = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+  const latestRenderer = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer.js'), 'utf8');
+  assert(latestRenderer.includes('ql-loading-state'), 'renderer.js must render .ql-loading-state in openQuickLook');
+  assert(latestStyles.includes('.ql-loading-state'), 'styles.css must define .ql-loading-state');
+  assert(latestStyles.includes('.ql-loading-spinner'), 'styles.css must define .ql-loading-spinner');
+  assert(latestRenderer.includes('pp-hero-text-preview is-loading'), 'renderer.js must mark text preview hero with is-loading while fetching content');
+  assert(latestStyles.includes('.pp-hero-text-preview.is-loading'), 'styles.css must center .pp-hero-text-preview.is-loading');
+  console.log('✓ Preview Loading Centering & Liquid Glass Indicator Suite verified');
 
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {

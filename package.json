@@ -10,7 +10,7 @@
     "test": "node test/self-check.js",
     "build": "npx electron-builder --win nsis portable",
     "build:local": "npx electron-builder --win nsis portable --config.electronDist=node_modules/electron/dist --publish never",
-    "build:installer": "npx electron-builder --win nsis",
+    "build:installer": "npx electron-builder --win nsis --config.electronDist=node_modules/electron/dist --publish never",
     "build:portable": "npx electron-builder --win portable",
     "build:dir": "npx electron-builder --dir"
   },
@@ -70,14 +70,26 @@
       ]
     },
     "nsis": {
-      "oneClick": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": false,
       "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
       "allowElevation": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeader": "assets/installerHeader.bmp",
+      "installerHeaderIcon": "assets/icon.ico",
+      "installerSidebar": "assets/installerSidebar.bmp",
+      "uninstallerSidebar": "assets/installerSidebar.bmp",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MyFiles",
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "include": "build/installer.nsh"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     }
   },
   "dependencies": {

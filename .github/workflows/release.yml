@@ -28,9 +28,10 @@ jobs:
       - name: Run verification tests
         run: node test/self-check.js
 
+      - name: Clean previous builds
+        run: if (Test-Path dist) { Remove-Item -Recurse -Force dist }
+
       - name: Build Windows Installer & Portable Executable
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win nsis portable --publish never
 
       - name: Publish to GitHub Releases
@@ -43,7 +44,7 @@ jobs:
           generate_release_notes: true
           files: |
             dist/*.exe
-            dist/*.yml
+            dist/latest.yml
             dist/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
