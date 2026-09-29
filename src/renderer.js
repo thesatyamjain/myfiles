@@ -583,10 +583,17 @@
     return TEXT_EXTENSIONS.includes(ext);
   }
 
-  // Universal Media URL Resolver (Supports both Electron file:/// and Web Server mode)
+  // Universal Media URL Resolver (Supports media-stream:// with HTTP 206 Partial Content, Electron file:/// and Web Server mode)
   function getMediaUrl(filePath) {
     if (!filePath) return '';
     if (window.myFilesAPI && window.location.protocol === 'file:') {
+      const ext = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
+      // For video and audio media files, route through media-stream:// protocol for HTTP 206 byte-range seeking
+      if (['.mp4', '.webm', '.ogg', '.ogv', '.mov', '.mkv', '.avi', '.mp3', '.wav', '.m4a', '.aac', '.flac'].includes(ext)) {
+        const norm = filePath.replace(/\\/g, '/');
+        const encoded = norm.split('/').map(s => encodeURIComponent(s)).join('/');
+        return encoded.startsWith('/') ? `media-stream://${encoded}` : `media-stream:///${encoded}`;
+      }
       const norm = filePath.replace(/\\/g, '/');
       if (/^[a-zA-Z]:/.test(norm)) {
         const drive = norm.substring(0, 2);
@@ -5215,9 +5222,10 @@
         </div>
       `;
     } else if (preview.type === 'video') {
+      const videoSrc = getMediaUrl(item.path) || preview.url;
       el.qlBody.innerHTML = `
         <div class="ql-media-wrap" style="position: relative;">
-          <video id="qlPreviewVideo" src="${preview.url}" controls ${state.qlAutoplay !== false ? 'autoplay' : ''} ${state.qlLoop ? 'loop' : ''}></video>
+          <video id="qlPreviewVideo" src="${videoSrc}" controls preload="auto" ${state.qlAutoplay !== false ? 'autoplay' : ''} ${state.qlLoop ? 'loop' : ''}></video>
           <div class="ql-media-controls-overlay">
             <span style="font-size: 10px; color: var(--text-dim); margin-right: 2px;">SPEED</span>
             <button class="ql-speed-btn" data-speed="0.75">0.75×</button>
@@ -5229,6 +5237,32 @@
         </div>
       `;
       const vid = el.qlBody.querySelector('#qlPreviewVideo');
+      if (vid) {
+        vid.onerror = () => {
+          // Fallback UI when Chromium encounters an unsupported audio/video codec (e.g. AC3/DTS/HEVC)
+          el.qlBody.innerHTML = `
+            <div class="empty-state" style="padding: 40px 20px;">
+              <div style="width: 80px; height: 80px; border-radius: var(--radius-md); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 44px; height: 44px; color: #f97316;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="empty-state-title" style="font-size: 19px; margin-bottom: 6px;">${escapeHtml(item.name)}</div>
+              <div class="empty-state-sub" style="margin-bottom: 20px;">
+                This media file uses a codec that requires hardware playback.
+              </div>
+              <button class="tool-btn btn-primary" id="qlBtnPlayVlcError" style="padding: 8px 18px; font-size: 13px;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>${state.vlcInstalled ? 'Play in VLC' : 'Play Media'}</span>
+              </button>
+            </div>
+          `;
+          const btnVlc = el.qlBody.querySelector('#qlBtnPlayVlcError');
+          if (btnVlc) {
+            btnVlc.addEventListener('click', async () => {
+              await api.playInVlc(item.path, { enqueue: false });
+            });
+          }
+        };
+      }
       const speedBtns = el.qlBody.querySelectorAll('.ql-speed-btn');
       speedBtns.forEach(btn => {
         btn.addEventListener('click', () => {

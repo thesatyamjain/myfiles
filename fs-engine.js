@@ -413,7 +413,18 @@ async function getFileContent(filePath, maxBytes = 2 * 1024 * 1024, isElectron =
   try {
     const stats = await fs.promises.stat(filePath);
     const ext = path.extname(filePath).toLowerCase();
-    const mediaUrl = isElectron ? pathToFileURL(filePath).href : `/api/raw-file?path=${encodeURIComponent(filePath)}`;
+    let mediaUrl;
+    if (isElectron) {
+      if (VIDEO_EXTENSIONS.includes(ext) || AUDIO_EXTENSIONS.includes(ext)) {
+        const norm = filePath.replace(/\\/g, '/');
+        const encoded = norm.split('/').map(s => encodeURIComponent(s)).join('/');
+        mediaUrl = encoded.startsWith('/') ? `media-stream://${encoded}` : `media-stream:///${encoded}`;
+      } else {
+        mediaUrl = pathToFileURL(filePath).href;
+      }
+    } else {
+      mediaUrl = `/api/raw-file?path=${encodeURIComponent(filePath)}`;
+    }
 
     if (IMAGE_EXTENSIONS.includes(ext) || VIDEO_EXTENSIONS.includes(ext) || AUDIO_EXTENSIONS.includes(ext)) {
       return {

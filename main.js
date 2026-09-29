@@ -1,5 +1,5 @@
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE || '16';
-const { app, BrowserWindow, ipcMain, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeImage, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -10,6 +10,20 @@ const vlc = require('./vlc');
 const dedup = require('./dedup');
 const storage = require('./storage');
 const fsEngine = require('./fs-engine');
+
+// Register media-stream custom protocol for continuous HTTP 206 Partial Content video/audio streaming
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'media-stream',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: true
+    }
+  }
+]);
 
 // Set Windows Application User Model ID for proper taskbar grouping and branding
 if (process.platform === 'win32') {
@@ -283,6 +297,77 @@ function createWindow(initialTarget = null) {
 }
 
 app.whenReady().then(() => {
+  // Handle media-stream:// protocol with HTTP 206 Partial Content range requests for seamless video/audio playback
+  protocol.handle('media-stream', async (request) => {
+    try {
+      const rawUrl = request.url.replace(/^media-stream:\/\//i, '');
+      let filePath = decodeURIComponent(rawUrl);
+      if (process.platform === 'win32' && /^\/[a-zA-Z]:/.test(filePath)) {
+        filePath = filePath.substring(1);
+      }
+      if (!fs.existsSync(filePath)) {
+        return new Response('File Not Found', { status: 404 });
+      }
+
+      const stat = await fs.promises.stat(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes = {
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.ogg': 'video/ogg',
+        '.ogv': 'video/ogg',
+        '.mov': 'video/quicktime',
+        '.mkv': 'video/x-matroska',
+        '.avi': 'video/x-msvideo',
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        '.m4a': 'audio/mp4',
+        '.aac': 'audio/aac',
+        '.flac': 'audio/flac'
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      const rangeHeader = request.headers.get('range');
+
+      if (!rangeHeader) {
+        return new Response(fs.createReadStream(filePath), {
+          status: 200,
+          headers: {
+            'Content-Type': contentType,
+            'Content-Length': String(stat.size),
+            'Accept-Ranges': 'bytes'
+          }
+        });
+      }
+
+      const parts = rangeHeader.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+
+      if (isNaN(start) || start >= stat.size || end >= stat.size) {
+        return new Response(null, {
+          status: 416,
+          headers: { 'Content-Range': `bytes */${stat.size}` }
+        });
+      }
+
+      const chunkSize = (end - start) + 1;
+      const fileStream = fs.createReadStream(filePath, { start, end });
+
+      return new Response(fileStream, {
+        status: 206,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+          'Content-Length': String(chunkSize),
+          'Accept-Ranges': 'bytes'
+        }
+      });
+    } catch (err) {
+      console.error('media-stream protocol error:', err);
+      return new Response('Server Error', { status: 500 });
+    }
+  });
+
   createWindow(initialTargetPath);
 
   app.on('activate', () => {
