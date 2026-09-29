@@ -5111,21 +5111,21 @@
 
       if (el.qlBtnZoomIn) {
         el.qlBtnZoomIn.onclick = () => {
-          state.quickLookZoom = Math.min(4.0, +(state.quickLookZoom + 0.25).toFixed(2));
+          state.quickLookZoom = Math.min(4.0, +(state.quickLookZoom + 0.10).toFixed(2));
           updateImageTransform(true);
         };
       }
 
       if (el.qlBtnZoomOut) {
         el.qlBtnZoomOut.onclick = () => {
-          state.quickLookZoom = Math.max(1.0, +(state.quickLookZoom - 0.25).toFixed(2));
+          state.quickLookZoom = Math.max(1.0, +(state.quickLookZoom - 0.10).toFixed(2));
           updateImageTransform(true);
         };
       }
 
       if (el.qlBtnZoomFit) {
         el.qlBtnZoomFit.onclick = () => {
-          state.quickLookZoom = state.quickLookZoom > 1.0 ? 1.0 : 2.0;
+          state.quickLookZoom = state.quickLookZoom > 1.0 ? 1.0 : 1.20;
           state.quickLookPanX = 0;
           state.quickLookPanY = 0;
           updateImageTransform(true);
@@ -5180,13 +5180,13 @@
           // If user dragged to pan, don't trigger zoom toggle
           if (totalMoved > 6) return;
           if (state.quickLookZoom === 1.0) {
-            state.quickLookZoom = 2.0;
+            state.quickLookZoom = 1.20;
             // Center zoom around click position relative to center of wrap
             const rect = wrap.getBoundingClientRect();
             const clickCenterX = e.clientX - (rect.left + rect.width / 2);
             const clickCenterY = e.clientY - (rect.top + rect.height / 2);
-            state.quickLookPanX = -clickCenterX * 0.8;
-            state.quickLookPanY = -clickCenterY * 0.8;
+            state.quickLookPanX = -clickCenterX * 0.4;
+            state.quickLookPanY = -clickCenterY * 0.4;
           } else {
             state.quickLookZoom = 1.0;
             state.quickLookPanX = 0;
@@ -5195,9 +5195,17 @@
           updateImageTransform(true);
         });
 
+        wrap.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          state.quickLookZoom = 1.0;
+          state.quickLookPanX = 0;
+          state.quickLookPanY = 0;
+          updateImageTransform(true);
+        });
+
         wrap.addEventListener('wheel', (e) => {
           e.preventDefault();
-          const delta = e.deltaY < 0 ? 0.25 : -0.25;
+          const delta = e.deltaY < 0 ? 0.05 : -0.05;
           const newZoom = Math.min(4.0, Math.max(1.0, +(state.quickLookZoom + delta).toFixed(2)));
           if (newZoom !== state.quickLookZoom) {
             state.quickLookZoom = newZoom;

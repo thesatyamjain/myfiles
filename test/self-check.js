@@ -737,8 +737,15 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
     return Math.min(4.0, Math.max(1.0, +(current + delta).toFixed(2)));
   }
   assert.strictEqual(clampZoom(1.0, -0.25), 1.0, 'Zoom cannot decrease below 1.0 (Fit)');
-  assert.strictEqual(clampZoom(1.0, 0.25), 1.25);
+  assert.strictEqual(clampZoom(1.0, 0.10), 1.10, 'Gradual button step must be 0.10 (10%)');
+  assert.strictEqual(clampZoom(1.0, 0.05), 1.05, 'Gradual wheel step must be 0.05 (5%)');
   assert.strictEqual(clampZoom(4.0, 0.5), 4.0, 'Zoom cannot exceed 4.0');
+
+  // Verify renderer uses gradual zoom steps instead of 0.25 jumps or 200% leaps
+  const rendererSrc = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer.js'), 'utf8');
+  assert(rendererSrc.includes('state.quickLookZoom + 0.10'), 'renderer.js must use gradual 0.10 step for zoom in');
+  assert(rendererSrc.includes('state.quickLookZoom - 0.10'), 'renderer.js must use gradual 0.10 step for zoom out');
+  assert(rendererSrc.includes('deltaY < 0 ? 0.05 : -0.05'), 'renderer.js must use gradual 0.05 step for mouse wheel');
 
   console.log('✓ Image Preview Engine (Formats, URI Encoding, Rotation & Zoom Clamping) verified');
 
