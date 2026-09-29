@@ -109,6 +109,7 @@
       return Promise.resolve({ success: true });
     },
     windowControl: (action) => {
+      if (window.myFilesAPI && window.myFilesAPI.windowControl) return window.myFilesAPI.windowControl(action);
       if (action === 'close') window.close();
     },
     checkForUpdates: () => (window.myFilesAPI && window.myFilesAPI.checkForUpdates ? window.myFilesAPI.checkForUpdates() : Promise.resolve({ status: 'dev-mode', message: 'Updates unavailable in web server mode' })),

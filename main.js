@@ -226,6 +226,9 @@ function createWindow(initialTarget = null) {
     if (mainWindow === win) {
       mainWindow = windows.size > 0 ? Array.from(windows)[0] : null;
     }
+    if (windows.size === 0 && process.platform !== 'darwin') {
+      app.exit(0);
+    }
   });
 
   const query = {};

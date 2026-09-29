@@ -6,10 +6,12 @@ echo ========================================================
 echo Launching MyFiles Standalone Desktop App...
 echo ========================================================
 
-:: 1. Clear any orphaned headless Electron instances that have no window open
-powershell -NoProfile -Command "$p = @(Get-Process electron -ErrorAction SilentlyContinue); if ($p.Count -gt 0 -and @($p | Where-Object { $_.MainWindowHandle -ne 0 }).Count -eq 0) { $p | Stop-Process -Force -ErrorAction SilentlyContinue }" >nul 2>nul
+:: 1. Launch installed or standalone Electron desktop app if available
+if exist "%LOCALAPPDATA%\Programs\MyFiles\MyFiles.exe" (
+  start "" "%LOCALAPPDATA%\Programs\MyFiles\MyFiles.exe" %*
+  exit /b 0
+)
 
-:: 2. Launch standalone Electron desktop app if available
 if exist "node_modules\electron\dist\electron.exe" (
   start "" "node_modules\electron\dist\electron.exe" . %*
   exit /b 0
