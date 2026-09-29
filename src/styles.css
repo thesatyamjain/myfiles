@@ -2,10 +2,22 @@
 
 :root {
   --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-xl: 20px;
+  --radius-2xl: 26px;
+  --radius-pill: 100px;
+  --radius-full: 9999px;
+
+  /* Apple iOS Continuous Curvature (Squircle) Tokens */
+  --ios-radius-xs: 6px;
+  --ios-radius-control: 9px;
+  --ios-radius-card: 14px;
+  --ios-radius-popover: 18px;
+  --ios-radius-sheet: 24px;
+  --ios-radius-pill: 100px;
+  --corner-smoothing: 1;
   
   --font-sans: -apple-system, BlinkMacSystemFont, "Geist", "Satoshi", "Segoe UI Variable Display", "Segoe UI", Roboto, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
@@ -371,13 +383,72 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* App container */
+/* App container with Apple iOS continuous corner curves */
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+body:not(.is-maximized) .app-container {
+  border-radius: var(--ios-radius-card, 14px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--liquid-rim-top);
+  corner-shape: squircle;
+}
+
+body:not(.is-maximized) .titlebar {
+  border-radius: var(--ios-radius-card, 14px) var(--ios-radius-card, 14px) 0 0;
+  corner-shape: squircle;
+}
+
+body:not(.is-maximized) .statusbar {
+  border-radius: 0 0 var(--ios-radius-card, 14px) var(--ios-radius-card, 14px);
+  corner-shape: squircle;
+}
+
+body.is-maximized .app-container,
+body.is-maximized .titlebar,
+body.is-maximized .statusbar {
+  border-radius: 0 !important;
+}
+
+/* Apple iOS Continuous Squircle Corner Curves */
+.view-switcher,
+.action-capsule,
+.search-box,
+.btn-search-type,
+.transmission-slider-wrap,
+.app-badge,
+.tab-item,
+.tool-btn,
+.view-btn,
+.action-capsule-btn,
+.grid-item,
+.file-card,
+.sidebar-item,
+.tag-item,
+.tag-chip,
+.context-menu,
+.sidebar-context-menu,
+.drive-context-menu,
+.tab-context-menu,
+.list-column-context-menu,
+.modal-card,
+.settings-modal-card,
+.properties-card,
+.quicklook-dialog,
+.toast,
+.ql-hud-exif,
+.view-group-header,
+.empty-chip,
+.pp-empty-icon-wrap,
+.pp-empty-shortcut-badge,
+.pp-breakdown-chip,
+.tag-dot {
+  corner-shape: squircle;
 }
 
 /* Icons */
@@ -776,15 +847,15 @@ body.theme-light .tool-btn.active {
     inset 0 -1px 0 0 rgba(0, 0, 0, 0.04);
 }
 
-/* macOS Finder Style Segmented Nav Capsule (< | >) */
+/* macOS / iOS Style Segmented Nav Capsule (< | >) */
 .nav-capsule {
   display: inline-flex;
   align-items: center;
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill, 100px);
   height: 32px;
-  padding: 1px;
+  padding: 2px 4px;
 }
 .nav-capsule-btn {
   display: flex;
@@ -794,7 +865,7 @@ body.theme-light .tool-btn.active {
   height: 28px;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill, 100px);
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -815,15 +886,15 @@ body.theme-light .tool-btn.active {
   background: var(--border-subtle);
 }
 
-/* macOS Finder Style Segmented Action Capsule (Share | Tag | More) */
+/* macOS / iOS Style Segmented Action Capsule (Share | Tag | More) */
 .action-capsule {
   display: inline-flex;
   align-items: center;
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill, 100px);
   height: 32px;
-  padding: 1px;
+  padding: 2px 4px;
 }
 .action-capsule-btn {
   display: flex;
@@ -833,7 +904,7 @@ body.theme-light .tool-btn.active {
   height: 28px;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill, 100px);
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1088,7 +1159,7 @@ body.theme-light .tool-btn.active {
   backdrop-filter: var(--liquid-filter-subtle);
   -webkit-backdrop-filter: var(--liquid-filter-subtle);
   border: 1px solid var(--liquid-rim-bottom);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill, 100px);
   padding: 3px;
   gap: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 0 var(--liquid-rim-top);
@@ -1103,7 +1174,7 @@ body.theme-light .tool-btn.active {
   height: 26px;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill, 100px);
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.16s var(--ease-out-expo);
@@ -1168,8 +1239,8 @@ body.theme-light .view-btn.active {
   width: 100%;
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0 8px;
+  border-radius: var(--radius-pill, 100px);
+  padding: 0 10px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .search-box:focus-within {
@@ -2942,7 +3013,7 @@ body.theme-light .grid-item.selected {
   max-height: 800px;
   background: var(--liquid-glass-bg, var(--bg-surface));
   border: 1px solid var(--liquid-rim-top);
-  border-radius: var(--radius-xl);
+  border-radius: var(--ios-radius-sheet, 24px);
   box-shadow: var(--liquid-shadow-floating);
   backdrop-filter: var(--liquid-filter-heavy);
   -webkit-backdrop-filter: var(--liquid-filter-heavy);
@@ -4094,8 +4165,8 @@ mark.ql-search-match {
   width: 420px;
   background: var(--liquid-glass-bg-elevated, var(--bg-surface-elevated));
   border: 1px solid var(--liquid-rim-top);
-  border-radius: var(--radius-lg);
-  padding: 22px 20px 20px;
+  border-radius: var(--ios-radius-sheet, 24px);
+  padding: 24px 22px 22px;
   box-shadow: 0 24px 64px -12px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.10);
   backdrop-filter: var(--liquid-filter);
   -webkit-backdrop-filter: var(--liquid-filter);
@@ -6518,7 +6589,7 @@ details[open] > .gi-summary .gi-chevron {
   max-height: 88vh;
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
+  border-radius: var(--ios-radius-sheet, 24px);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;

@@ -104,10 +104,20 @@ if (process.platform === 'win32') {
   refreshWindowsDrivesInfo();
 }
 
+// Cache logical drives for 4s to prevent repeated heavy disk checks during navigation
+let cachedDrivesResult = null;
+let lastDrivesCacheTime = 0;
+const DRIVES_CACHE_TTL_MS = 4000;
+
 /**
  * Detect all mounted logical drives with storage metrics
  */
-async function getDrives() {
+async function getDrives(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && cachedDrivesResult && (now - lastDrivesCacheTime < DRIVES_CACHE_TTL_MS)) {
+    return cachedDrivesResult;
+  }
+
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const drives = [];
 
@@ -122,9 +132,15 @@ async function getDrives() {
         let freeBytes = 0;
         let totalBytes = 0;
         try {
-          const stat = fs.statfsSync(rootPath);
-          freeBytes = Number(stat.bavail) * Number(stat.bsize);
-          totalBytes = Number(stat.blocks) * Number(stat.bsize);
+          if (fs.promises && fs.promises.statfs) {
+            const stat = await fs.promises.statfs(rootPath);
+            freeBytes = Number(stat.bavail) * Number(stat.bsize);
+            totalBytes = Number(stat.blocks) * Number(stat.bsize);
+          } else {
+            const stat = fs.statfsSync(rootPath);
+            freeBytes = Number(stat.bavail) * Number(stat.bsize);
+            totalBytes = Number(stat.blocks) * Number(stat.bsize);
+          }
         } catch {}
 
         const info = winDriveCache.get(letter);
@@ -158,6 +174,11 @@ async function getDrives() {
         });
       }
     } catch {}
+  }
+
+  if (drives.length > 0) {
+    cachedDrivesResult = drives;
+    lastDrivesCacheTime = Date.now();
   }
   return drives;
 }

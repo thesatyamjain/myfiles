@@ -114,6 +114,8 @@
     },
     checkForUpdates: () => (window.myFilesAPI && window.myFilesAPI.checkForUpdates ? window.myFilesAPI.checkForUpdates() : Promise.resolve({ status: 'dev-mode', message: 'Updates unavailable in web server mode' })),
     quitAndInstallUpdate: () => (window.myFilesAPI && window.myFilesAPI.quitAndInstallUpdate ? window.myFilesAPI.quitAndInstallUpdate() : Promise.resolve({ success: false })),
+    getAppVersion: () => (window.myFilesAPI && window.myFilesAPI.getAppVersion ? window.myFilesAPI.getAppVersion() : Promise.resolve('1.1.1')),
+    openExternal: (url) => (window.myFilesAPI && window.myFilesAPI.openExternal ? window.myFilesAPI.openExternal(url) : window.open(url, '_blank')),
     onUpdateStatus: (cb) => (window.myFilesAPI && window.myFilesAPI.onUpdateStatus ? window.myFilesAPI.onUpdateStatus(cb) : () => {})
   };
 
@@ -1641,6 +1643,7 @@
 
   function queueFolderCount(itemPath, itemEl) {
     if (!itemPath || !api || !api.getFileDetails) return;
+    if (folderCountQueue.length >= 35) return; // Prevent background queue buildup on large directories
     folderCountQueue.push({ itemPath, itemEl });
     processFolderCountQueue();
   }
@@ -7203,6 +7206,7 @@
   }
 
   // --- FAST LIVE SEARCH & QUICK IN-FOLDER FILTER ---
+  let searchDebounceTimer = null;
   function handleSearchInput(query) {
     state.filterQuery = query || '';
     el.btnSearchClear.style.display = query ? 'flex' : 'none';
@@ -7240,14 +7244,18 @@
       el.searchPopover.style.display = 'none';
     }
 
-    // Instant in-folder filtering (0ms feedback!)
-    applyItemFilter();
-    if (state.viewMode === 'columns') {
-      renderMillerColumns();
-    } else {
-      renderCurrentView();
-    }
-    updateStatusBar();
+    // Instant in-folder filtering with lightweight debounce while typing to prevent UI thread lock
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    const delay = trimmed === '' ? 0 : 40;
+    searchDebounceTimer = setTimeout(() => {
+      applyItemFilter();
+      if (state.viewMode === 'columns') {
+        renderMillerColumns();
+      } else {
+        renderCurrentView();
+      }
+      updateStatusBar();
+    }, delay);
   }
 
   function filterByKind(kind) {
@@ -10501,6 +10509,14 @@
       }
     });
 
+    if (window.myFilesAPI && window.myFilesAPI.onWindowState) {
+      window.myFilesAPI.onWindowState((data) => {
+        if (data && typeof data.isMaximized === 'boolean') {
+          document.body.classList.toggle('is-maximized', data.isMaximized);
+        }
+      });
+    }
+
     // Sidebar & Inspector Resizers
     if (el.sidebarResizer) {
       let isResizing = false;
@@ -11038,6 +11054,22 @@
     const btnRestart = document.getElementById('btnRestartAndUpdate');
     const updateStatusText = document.getElementById('settingsUpdateStatusText');
 
+    let runningAppVersion = '1.1.1';
+    let availableDownloadUrl = null;
+
+    api.getAppVersion().then(v => {
+      if (v) {
+        runningAppVersion = v;
+        if (updateStatusText) {
+          updateStatusText.textContent = `Installed version: v${v} · Over-the-air updates via GitHub Releases`;
+        }
+        const footerMeta = document.querySelector('.settings-footer-meta span:first-child');
+        if (footerMeta) {
+          footerMeta.textContent = `MyFiles Desktop v${v}`;
+        }
+      }
+    }).catch(() => {});
+
     if (btnCheckUpdates) {
       btnCheckUpdates.addEventListener('click', async () => {
         if (btnCheckUpdates.disabled) return;
@@ -11047,9 +11079,25 @@
 
         try {
           const res = await api.checkForUpdates();
-          if (res && res.status === 'dev-mode') {
-            if (updateStatusText) updateStatusText.textContent = 'Installed version: v1.1.0 · Over-the-air updates active in packaged builds.';
-            showToast('Auto-updates run in packaged installer builds', 'info');
+          if (res && res.status === 'available') {
+            if (res.isPortable && res.downloadUrl) {
+              availableDownloadUrl = res.downloadUrl;
+              if (updateStatusText) updateStatusText.textContent = `Update v${res.version} is available for download!`;
+              if (btnRestart) {
+                btnRestart.textContent = `Download v${res.version}`;
+                btnRestart.style.display = 'inline-flex';
+              }
+              showToast(`Update v${res.version} available`, 'info');
+            } else {
+              if (updateStatusText) updateStatusText.textContent = `Update v${res.version} found, downloading in background...`;
+              showToast(`Update v${res.version} found`, 'info');
+            }
+          } else if (res && res.status === 'up-to-date') {
+            if (updateStatusText) updateStatusText.textContent = `MyFiles is up to date (v${res.version || runningAppVersion}).`;
+            showToast('MyFiles is up to date', 'success');
+          } else if (res && res.status === 'dev-mode') {
+            if (updateStatusText) updateStatusText.textContent = `Running in development mode (v${runningAppVersion}). Updates active in packaged builds.`;
+            showToast('Development mode active', 'info');
           } else if (res && res.status === 'error') {
             if (updateStatusText) updateStatusText.textContent = `Update check failed: ${res.message || 'Network error'}`;
             showToast('Unable to check for updates', 'error');
@@ -11067,8 +11115,12 @@
 
     if (btnRestart) {
       btnRestart.addEventListener('click', () => {
-        showToast('Restarting to apply update...', 'info');
-        api.quitAndInstallUpdate();
+        if (availableDownloadUrl) {
+          api.openExternal(availableDownloadUrl);
+        } else {
+          showToast('Restarting to apply update...', 'info');
+          api.quitAndInstallUpdate();
+        }
       });
     }
 
@@ -11077,19 +11129,32 @@
       if (data.status === 'checking') {
         if (updateStatusText) updateStatusText.textContent = 'Checking for updates...';
       } else if (data.status === 'available') {
-        if (updateStatusText) updateStatusText.textContent = `Downloading update v${data.version}...`;
-        showToast(`Update v${data.version} found, downloading in background...`, 'info');
+        if (data.isPortable && data.downloadUrl) {
+          availableDownloadUrl = data.downloadUrl;
+          if (updateStatusText) updateStatusText.textContent = `Update v${data.version} is available!`;
+          if (btnRestart) {
+            btnRestart.textContent = `Download v${data.version}`;
+            btnRestart.style.display = 'inline-flex';
+          }
+          showToast(`Update v${data.version} available`, 'info');
+        } else {
+          if (updateStatusText) updateStatusText.textContent = `Downloading update v${data.version}...`;
+          showToast(`Update v${data.version} found, downloading in background...`, 'info');
+        }
       } else if (data.status === 'downloading') {
         if (updateStatusText) updateStatusText.textContent = `Downloading update: ${data.percent}%`;
       } else if (data.status === 'ready') {
         if (updateStatusText) updateStatusText.textContent = `Update v${data.version} is downloaded and ready to install.`;
-        if (btnRestart) btnRestart.style.display = 'inline-flex';
+        if (btnRestart) {
+          btnRestart.textContent = 'Restart & Update';
+          btnRestart.style.display = 'inline-flex';
+        }
         showToast(`MyFiles v${data.version} ready to install`, 'success');
       } else if (data.status === 'up-to-date') {
-        if (updateStatusText) updateStatusText.textContent = `MyFiles is up to date (v${data.version || '1.1.0'}).`;
+        if (updateStatusText) updateStatusText.textContent = `MyFiles is up to date (v${data.version || runningAppVersion}).`;
         showToast('MyFiles is up to date', 'success');
       } else if (data.status === 'error') {
-        if (updateStatusText) updateStatusText.textContent = `Update error: ${data.message}`;
+        if (updateStatusText) updateStatusText.textContent = `Update notice: ${data.message}`;
       }
     });
 

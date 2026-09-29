@@ -31,14 +31,27 @@ jobs:
       - name: Clean previous builds
         run: if (Test-Path dist) { Remove-Item -Recurse -Force dist }
 
+      - name: Sync package.json version with Git tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Write-Host "Release workflow triggered by ref: $tag"
+          if ($tag -match '^v?(\d+\.\d+\.\d+.*)$') {
+            $ver = $Matches[1]
+            Write-Host "Updating package.json version to: $ver"
+            $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+            $pkg.version = $ver
+            $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json
+          }
+
       - name: Build Windows Installer & Portable Executable
         run: npx electron-builder --win nsis portable --publish never
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.0' }}
-          name: ${{ github.ref_type == 'tag' && github.ref_name || 'MyFiles v1.1.0' }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.1.1' }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'MyFiles v1.1.1' }}
           draft: false
           prerelease: false
           generate_release_notes: true

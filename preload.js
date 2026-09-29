@@ -107,6 +107,8 @@ contextBridge.exposeInMainWorld('myFilesAPI', {
   // Over-The-Air (OTA) Updates
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   quitAndInstallUpdate: () => ipcRenderer.invoke('quit-and-install-update'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onUpdateStatus: (callback) => {
     const sub = (_event, data) => callback(data);
     ipcRenderer.on('update-status', sub);

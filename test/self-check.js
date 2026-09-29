@@ -1630,7 +1630,7 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(serverSrcProd.includes('Cache-Control'), 'server.js static server must set Cache-Control headers');
 
   // Version bump
-  assert(pkg.version === '1.1.0', `package.json version must be 1.1.0, got ${pkg.version}`);
+  assert(/^\d+\.\d+\.\d+/.test(pkg.version), `package.json version must be valid semver, got ${pkg.version}`);
 
   // Localhost-only binding (not 0.0.0.0)
   assert(serverSrcProd.includes("'127.0.0.1'"), 'server.js must bind to 127.0.0.1 (localhost only)');

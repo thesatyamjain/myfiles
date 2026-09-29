@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const https = require('https');
 const archive = require('./archive');
 const vlc = require('./vlc');
 const dedup = require('./dedup');
@@ -33,7 +34,6 @@ if (process.platform === 'win32') {
 // Hardware & GPU rendering acceleration flags for zero-latency UI
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
-app.commandLine.appendSwitch('disable-software-rasterizer');
 
 const appIconPath = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 let appNativeIcon = null;
@@ -56,6 +56,14 @@ try {
   ({ autoUpdater } = require('electron-updater'));
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = true;
+  autoUpdater.allowDowngrade = false;
+  autoUpdater.logger = console;
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'thesatyamjain',
+    repo: 'myfiles'
+  });
 
   function broadcastUpdateStatus(data) {
     windows.forEach(win => {
@@ -70,7 +78,11 @@ try {
   });
 
   autoUpdater.on('update-available', (info) => {
-    broadcastUpdateStatus({ status: 'available', version: info.version });
+    broadcastUpdateStatus({
+      status: 'available',
+      version: info.version,
+      releaseNotes: info.releaseNotes || info.releaseName || ''
+    });
   });
 
   autoUpdater.on('update-not-available', (info) => {
@@ -86,10 +98,72 @@ try {
   });
 
   autoUpdater.on('error', (err) => {
+    console.warn('Auto-updater background notice:', err.message);
     broadcastUpdateStatus({ status: 'error', message: err.message });
   });
 } catch (err) {
   console.warn('Auto-updater module not loaded:', err.message);
+}
+
+function compareVersions(v1, v2) {
+  if (!v1 || !v2) return 0;
+  const clean = (v) => String(v).replace(/^v/, '').split(/[-+]/)[0];
+  const parts1 = clean(v1).split('.').map(n => parseInt(n, 10) || 0);
+  const parts2 = clean(v2).split('.').map(n => parseInt(n, 10) || 0);
+  const maxLen = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < maxLen; i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
+function fetchLatestGitHubRelease() {
+  return new Promise((resolve, reject) => {
+    const fetchUrl = (targetUrl, redirectCount = 0) => {
+      if (redirectCount > 3) {
+        return reject(new Error('Too many redirects fetching release info'));
+      }
+      let parsed;
+      try {
+        parsed = new URL(targetUrl);
+      } catch (err) {
+        return reject(err);
+      }
+      const req = https.get({
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        headers: {
+          'User-Agent': 'MyFiles-Desktop-App',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return fetchUrl(res.headers.location, redirectCount + 1);
+        }
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(new Error('Invalid JSON from GitHub API'));
+            }
+          } else {
+            reject(new Error(`GitHub API returned HTTP ${res.statusCode}`));
+          }
+        });
+      });
+      req.on('error', reject);
+      req.setTimeout(8000, () => {
+        req.destroy(new Error('Update check request timed out'));
+      });
+    };
+    fetchUrl('https://api.github.com/repos/thesatyamjain/myfiles/releases/latest');
+  });
 }
 
 // Configuration directory
@@ -228,6 +302,9 @@ function createWindow(initialTarget = null) {
   win.once('ready-to-show', () => {
     win.show();
     win.focus();
+    if (process.env.CAPTURE_SCREENSHOTS === '1') {
+      runScreenshotCapture(win);
+    }
   });
 
   // Fallback: guarantee the window is shown if ready-to-show is missed or delayed
@@ -1273,20 +1350,78 @@ ipcMain.handle('delete-permanently', async (_event, itemPath) => {
 
 // IPC: Check for Updates (OTA)
 ipcMain.handle('check-for-updates', async () => {
-  if (!app.isPackaged) {
-    return { status: 'dev-mode', message: 'Updates are active in installed production builds.' };
+  const currentVersion = app.getVersion();
+  const isPortable = Boolean(process.env.PORTABLE_EXECUTABLE_FILE);
+
+  // 1. If running as packaged installer (NSIS), run electron-updater
+  if (app.isPackaged && !isPortable && autoUpdater) {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      if (result && result.updateInfo) {
+        const remoteVer = result.updateInfo.version;
+        if (compareVersions(remoteVer, currentVersion) > 0) {
+          return {
+            status: 'available',
+            version: remoteVer,
+            currentVersion,
+            isPortable: false
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('electron-updater check notice, falling back to GitHub API:', err.message);
+    }
   }
-  if (!autoUpdater) {
-    return { status: 'unavailable', message: 'Auto-updater service unavailable.' };
-  }
+
+  // 2. Direct GitHub Releases check (works in Portable, Dev mode, or when autoUpdater encounters stale latest.yml)
   try {
-    const result = await autoUpdater.checkForUpdates();
-    return {
-      status: 'checking',
-      updateInfo: result ? result.updateInfo : null
-    };
+    const release = await fetchLatestGitHubRelease();
+    if (!release || !release.tag_name) {
+      return { status: 'up-to-date', currentVersion, version: currentVersion };
+    }
+    const latestVer = release.tag_name.replace(/^v/, '');
+    const isNewer = compareVersions(latestVer, currentVersion) > 0;
+    if (isNewer) {
+      const asset = (release.assets || []).find(a => 
+        isPortable ? a.name.includes('Portable') : a.name.includes('Setup')
+      ) || (release.assets && release.assets[0]);
+
+      const downloadUrl = asset ? asset.browser_download_url : release.html_url;
+
+      broadcastUpdateStatus({
+        status: 'available',
+        version: latestVer,
+        releaseName: release.name || release.tag_name,
+        releaseNotes: release.body || '',
+        downloadUrl,
+        isPortable
+      });
+
+      return {
+        status: 'available',
+        version: latestVer,
+        currentVersion,
+        downloadUrl,
+        isPortable,
+        releaseNotes: release.body || ''
+      };
+    } else {
+      broadcastUpdateStatus({
+        status: 'up-to-date',
+        version: currentVersion
+      });
+      return {
+        status: 'up-to-date',
+        currentVersion,
+        version: currentVersion
+      };
+    }
   } catch (err) {
-    return { status: 'error', message: err.message };
+    broadcastUpdateStatus({
+      status: 'error',
+      message: err.message
+    });
+    return { status: 'error', message: err.message, currentVersion };
   }
 });
 
@@ -1298,3 +1433,113 @@ ipcMain.handle('quit-and-install-update', () => {
   }
   return { success: false, error: 'Auto-updater not loaded' };
 });
+
+// IPC: Get App Version
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+// IPC: Open External URL safely
+ipcMain.handle('open-external', async (_event, url) => {
+  if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
+    await shell.openExternal(url);
+    return { success: true };
+  }
+  return { success: false, error: 'Invalid URL' };
+});
+
+// Lossless screenshot capture utility for documentation and product preview
+async function runScreenshotCapture(win) {
+  const screenshotsDir = path.join(__dirname, 'screenshots');
+  const artifactDir = 'C:\\Users\\hp\\.gemini\\antigravity\\brain\\c2c887ca-8091-4051-b3eb-dd55edec41e6';
+  fs.mkdirSync(screenshotsDir, { recursive: true });
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  console.log('[Screenshots] Waiting 2500ms for filesystem scan and icons to settle...');
+  await sleep(2500);
+
+  async function snap(name) {
+    const img = await win.webContents.capturePage();
+    const pngBuf = img.toPNG();
+    const p1 = path.join(screenshotsDir, name);
+    const p2 = path.join(artifactDir, name);
+    fs.writeFileSync(p1, pngBuf);
+    try { fs.writeFileSync(p2, pngBuf); } catch {}
+    console.log(`[Screenshots] Saved lossless: ${name} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
+  }
+
+  // 1. Column View (macOS Finder Miller Columns)
+  await win.webContents.executeJavaScript(`
+    const btn = document.getElementById('btnViewColumns');
+    if (btn) btn.click();
+  `);
+  await sleep(1000);
+  await snap('01-miller-columns-view.png');
+
+  // 2. Grid View (Icons View)
+  await win.webContents.executeJavaScript(`
+    const btn = document.getElementById('btnViewGrid');
+    if (btn) btn.click();
+  `);
+  await sleep(1000);
+  await snap('02-grid-icons-view.png');
+
+  // 3. List View (Details View with headers)
+  await win.webContents.executeJavaScript(`
+    const btn = document.getElementById('btnViewList');
+    if (btn) btn.click();
+  `);
+  await sleep(1000);
+  await snap('03-list-details-view.png');
+
+  // 4. Gallery View (Hero media & scrubber)
+  await win.webContents.executeJavaScript(`
+    const btn = document.getElementById('btnViewGallery');
+    if (btn) btn.click();
+  `);
+  await sleep(1000);
+  await snap('04-gallery-view.png');
+
+  // 5. Dual Pane / Split Workspace
+  await win.webContents.executeJavaScript(`
+    const btnCol = document.getElementById('btnViewColumns');
+    if (btnCol) btnCol.click();
+    const btnDual = document.getElementById('btnToggleDualPane');
+    if (btnDual) btnDual.click();
+  `);
+  await sleep(1000);
+  await snap('05-dual-pane-split-workspace.png');
+
+  // Turn off dual pane
+  await win.webContents.executeJavaScript(`
+    const btnDual = document.getElementById('btnToggleDualPane');
+    if (btnDual) btnDual.click();
+  `);
+  await sleep(500);
+
+  // 6. Settings Modal (Glass UI, theme, preferences)
+  await win.webContents.executeJavaScript(`
+    const btnSettings = document.getElementById('sidebarSettings');
+    if (btnSettings) btnSettings.click();
+  `);
+  await sleep(1000);
+  await snap('06-preferences-settings-modal.png');
+
+  // Close Settings Modal
+  await win.webContents.executeJavaScript(`
+    const done = document.getElementById('btnSettingsDone') || document.getElementById('btnCloseSettingsModal');
+    if (done) done.click();
+  `);
+  await sleep(600);
+
+  // 7. Quick Look Preview Modal
+  await win.webContents.executeJavaScript(`
+    const item = document.querySelector('.file-item, .col-file-item, .list-row');
+    if (item) item.click();
+    const btnQl = document.getElementById('btnQuickLook');
+    if (btnQl) btnQl.click();
+  `);
+  await sleep(1000);
+  await snap('07-quick-look-preview.png');
+
+  console.log('[Screenshots] All lossless captures completed successfully!');
+  app.exit(0);
+}
