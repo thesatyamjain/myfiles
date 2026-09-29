@@ -1,4 +1,12 @@
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE || '16';
+
+process.on('uncaughtException', (err) => {
+  console.error('[MyFiles] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[MyFiles] Unhandled Rejection:', reason);
+});
+
 const { app, BrowserWindow, ipcMain, shell, nativeImage, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -225,15 +233,19 @@ function extractPathArg(argv) {
 
 const initialTargetPath = extractPathArg(process.argv);
 
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock = (process.env.CAPTURE_SCREENSHOTS === '1') || process.argv.includes('--force-instance') || app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.exit(0);
-} else {
+} else if (process.env.CAPTURE_SCREENSHOTS !== '1') {
   app.on('second-instance', (_event, commandLine) => {
     const target = extractPathArg(commandLine);
     const existingWindows = BrowserWindow.getAllWindows().filter(w => !w.isDestroyed());
     if (existingWindows.length === 0) {
-      createWindow(target);
+      const win = createWindow(target);
+      if (win && !win.isDestroyed()) {
+        win.show();
+        win.focus();
+      }
       return;
     }
     if (target) {
@@ -241,15 +253,17 @@ if (!gotTheLock) {
       if (win && !win.isDestroyed()) {
         if (win.isMinimized()) win.restore();
         win.show();
+        win.setAlwaysOnTop(true);
         win.focus();
+        win.setAlwaysOnTop(false);
       }
     } else {
       const win = BrowserWindow.getFocusedWindow() || existingWindows[0];
       if (win && !win.isDestroyed()) {
         if (win.isMinimized()) win.restore();
         win.show();
-        win.focus();
         win.setAlwaysOnTop(true);
+        win.focus();
         win.setAlwaysOnTop(false);
       }
     }
@@ -1437,14 +1451,7 @@ ipcMain.handle('quit-and-install-update', () => {
 // IPC: Get App Version
 ipcMain.handle('get-app-version', () => app.getVersion());
 
-// IPC: Open External URL safely
-ipcMain.handle('open-external', async (_event, url) => {
-  if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
-    await shell.openExternal(url);
-    return { success: true };
-  }
-  return { success: false, error: 'Invalid URL' };
-});
+
 
 // Lossless screenshot capture utility for documentation and product preview
 async function runScreenshotCapture(win) {
@@ -1466,72 +1473,57 @@ async function runScreenshotCapture(win) {
     console.log(`[Screenshots] Saved lossless: ${name} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
   }
 
+  async function runJs(fnBody) {
+    try {
+      await win.webContents.executeJavaScript(`(() => { try { ${fnBody} } catch (e) { console.error(e); } })()`);
+    } catch (e) {
+      console.warn('executeJavaScript warning:', e.message);
+    }
+  }
+
   // 1. Column View (macOS Finder Miller Columns)
-  await win.webContents.executeJavaScript(`
-    const btn = document.getElementById('btnViewColumns');
-    if (btn) btn.click();
-  `);
+  await runJs(`const btn = document.getElementById('btnViewColumns'); if (btn) btn.click();`);
   await sleep(1000);
   await snap('01-miller-columns-view.png');
 
   // 2. Grid View (Icons View)
-  await win.webContents.executeJavaScript(`
-    const btn = document.getElementById('btnViewGrid');
-    if (btn) btn.click();
-  `);
+  await runJs(`const btn = document.getElementById('btnViewGrid'); if (btn) btn.click();`);
   await sleep(1000);
   await snap('02-grid-icons-view.png');
 
   // 3. List View (Details View with headers)
-  await win.webContents.executeJavaScript(`
-    const btn = document.getElementById('btnViewList');
-    if (btn) btn.click();
-  `);
+  await runJs(`const btn = document.getElementById('btnViewList'); if (btn) btn.click();`);
   await sleep(1000);
   await snap('03-list-details-view.png');
 
   // 4. Gallery View (Hero media & scrubber)
-  await win.webContents.executeJavaScript(`
-    const btn = document.getElementById('btnViewGallery');
-    if (btn) btn.click();
-  `);
+  await runJs(`const btn = document.getElementById('btnViewGallery'); if (btn) btn.click();`);
   await sleep(1000);
   await snap('04-gallery-view.png');
 
   // 5. Dual Pane / Split Workspace
-  await win.webContents.executeJavaScript(`
-    const btnCol = document.getElementById('btnViewColumns');
-    if (btnCol) btnCol.click();
-    const btnDual = document.getElementById('btnToggleDualPane');
-    if (btnDual) btnDual.click();
+  await runJs(`
+    const btnCol = document.getElementById('btnViewColumns'); if (btnCol) btnCol.click();
+    const btnDual = document.getElementById('btnToggleDualPane'); if (btnDual) btnDual.click();
   `);
   await sleep(1000);
   await snap('05-dual-pane-split-workspace.png');
 
   // Turn off dual pane
-  await win.webContents.executeJavaScript(`
-    const btnDual = document.getElementById('btnToggleDualPane');
-    if (btnDual) btnDual.click();
-  `);
+  await runJs(`const btnDual = document.getElementById('btnToggleDualPane'); if (btnDual) btnDual.click();`);
   await sleep(500);
 
   // 6. Settings Modal (Glass UI, theme, preferences)
-  await win.webContents.executeJavaScript(`
-    const btnSettings = document.getElementById('sidebarSettings');
-    if (btnSettings) btnSettings.click();
-  `);
+  await runJs(`const btnSettings = document.getElementById('sidebarSettings'); if (btnSettings) btnSettings.click();`);
   await sleep(1000);
   await snap('06-preferences-settings-modal.png');
 
   // Close Settings Modal
-  await win.webContents.executeJavaScript(`
-    const done = document.getElementById('btnSettingsDone') || document.getElementById('btnCloseSettingsModal');
-    if (done) done.click();
-  `);
+  await runJs(`const done = document.getElementById('btnSettingsDone') || document.getElementById('btnCloseSettingsModal'); if (done) done.click();`);
   await sleep(600);
 
   // 7. Quick Look Preview Modal
-  await win.webContents.executeJavaScript(`
+  await runJs(`
     const item = document.querySelector('.file-item, .col-file-item, .list-row');
     if (item) item.click();
     const btnQl = document.getElementById('btnQuickLook');

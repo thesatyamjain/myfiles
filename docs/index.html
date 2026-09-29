@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyFiles — Modern Keyboard-First Windows File Manager</title>
+  <meta name="description" content="A fast, keyboard-first Windows file manager with macOS Finder Miller Columns, instant Spacebar Quick Look, Dual-Pane workspace, and colored tags.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-surface: #0f172a;
+      --bg-elevated: #1e293b;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.16);
+      --accent: #f97316;
+      --accent-glow: rgba(249, 115, 22, 0.25);
+      --accent-hover: #fb923c;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Top Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 11, 20, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .brand-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: #ffffff;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 0.925rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.925rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-hover);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 72px 24px 40px;
+      text-align: center;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(249, 115, 22, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.28);
+      color: #fb923c;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 24px;
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 5.5vw, 4.25rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+      max-width: 900px;
+      margin: 0 auto 20px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 65ch;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+
+    /* Interactive Showcase Viewport */
+    .showcase-wrapper {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .showcase-tabs-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: rgba(249, 115, 22, 0.14);
+      border-color: rgba(249, 115, 22, 0.4);
+      color: #fb923c;
+    }
+
+    .kbd-chip {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.725rem;
+      color: var(--text-dim);
+    }
+
+    .showcase-frame {
+      background: var(--bg-surface);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-xl);
+      padding: 10px;
+      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 0 80px -20px var(--accent-glow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .showcase-img-container {
+      position: relative;
+      width: 100%;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      aspect-ratio: 16 / 10;
+      background: #020617;
+    }
+
+    .showcase-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.25s ease;
+    }
+
+    .showcase-meta-bar {
+      margin-top: 14px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .showcase-feature-title {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Bento Grid */
+    .section-header {
+      text-align: center;
+      max-width: 65ch;
+      margin: 0 auto 50px;
+    }
+
+    .section-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .bento-grid {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px 100px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+    }
+
+    .bento-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .col-7 { grid-column: span 7; }
+    .col-5 { grid-column: span 5; }
+    .col-4 { grid-column: span 4; }
+    .col-8 { grid-column: span 8; }
+    .col-6 { grid-column: span 6; }
+
+    .card-label {
+      font-size: 0.775rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #fb923c;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .card-text {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .card-preview-thumb {
+      width: 100%;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Comparison Table */
+    .table-section {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px 100px;
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .compare-table th,
+    .compare-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.925rem;
+    }
+
+    .compare-table th {
+      background: rgba(255, 255, 255, 0.02);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.775rem;
+    }
+
+    .compare-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .highlight-cell {
+      background: rgba(249, 115, 22, 0.06);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #040711;
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    .footer-links a:hover {
+      color: var(--text-main);
+    }
+
+    @media (max-width: 900px) {
+      .col-7, .col-5, .col-4, .col-8, .col-6 {
+        grid-column: span 12;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <span>MyFiles</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#showcase">View Modes</a>
+        <a href="#features">Features</a>
+        <a href="#comparison">Finder vs Explorer</a>
+        <a href="https://github.com/thesatyamjain/myfiles" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="https://github.com/thesatyamjain/myfiles/releases" class="btn btn-secondary">Releases</a>
+        <a href="https://github.com/thesatyamjain/myfiles/releases/latest" class="btn btn-primary">
+          <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download v1.1.1</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="badge-pill">
+      <span>NEW</span> · v1.1.1 Released with Continuous Media-Stream Protocol
+    </div>
+    <h1 class="hero-title">
+      <span>The Keyboard-First File Explorer for Windows</span>
+    </h1>
+    <p class="hero-subtitle">
+      Combines the best ergonomics of macOS Finder — Spacebar Quick Look, Miller Columns, and Colored Tags — with native Windows power: dual-pane split workspace, instant 0ms context menus, and disk status gauges.
+    </p>
+
+    <div class="hero-cta-group">
+      <a href="https://github.com/thesatyamjain/myfiles/releases/latest" class="btn btn-primary" style="padding: 14px 28px; font-size: 1.05rem;">
+        <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Download for Windows</span>
+      </a>
+      <a href="https://github.com/thesatyamjain/myfiles" class="btn btn-secondary" style="padding: 14px 24px; font-size: 1.05rem;">
+        <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        <span>Star on GitHub</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Interactive Lossless Showcase Viewport -->
+  <section class="showcase-wrapper" id="showcase">
+    <div class="showcase-tabs-container">
+      <button class="tab-btn active" data-img="screenshots/01-miller-columns-view.png" data-name="Miller Columns View" data-desc="Hierarchical multi-column browser with inline preview & keyboard arrows">
+        <span>Miller Columns</span>
+        <span class="kbd-chip">Ctrl+3</span>
+      </button>
+      <button class="tab-btn" data-img="screenshots/02-grid-icons-view.png" data-name="Icons Grid View" data-desc="Modern card grid with folder counters and 4-step icon gear slider">
+        <span>Grid View</span>
+        <span class="kbd-chip">Ctrl+1</span>
+      </button>
+      <button class="tab-btn" data-img="screenshots/03-list-details-view.png" data-name="Details List View" data-desc="Compact table with sticky collapsible group headers and relative dates">
+        <span>Details List</span>
+        <span class="kbd-chip">Ctrl+2</span>
+      </button>
+      <button class="tab-btn" data-img="screenshots/04-gallery-view.png" data-name="Gallery Media View" data-desc="Bottom thumbnail scrubber track with centered hero media viewport">
+        <span>Gallery View</span>
+        <span class="kbd-chip">Ctrl+4</span>
+      </button>
+      <button class="tab-btn" data-img="screenshots/05-dual-pane-split-workspace.png" data-name="Dual Pane Split Workspace" data-desc="Side-by-side dual explorer panes with quick drive switcher tabs & swap">
+        <span>Dual Pane</span>
+        <span class="kbd-chip">Ctrl+Shift+D</span>
+      </button>
+      <button class="tab-btn" data-img="screenshots/06-preferences-settings-modal.png" data-name="Obsidian Settings Suite" data-desc="Comprehensive preferences for themes, shortcuts, sidebar, and system defaults">
+        <span>Settings Suite</span>
+        <span class="kbd-chip">Ctrl+,</span>
+      </button>
+      <button class="tab-btn" data-img="screenshots/07-quick-look-preview.png" data-name="Spacebar Quick Look" data-desc="Instant zero-latency preview for images, PDFs, code, audio, and video">
+        <span>Quick Look</span>
+        <span class="kbd-chip">Space</span>
+      </button>
+    </div>
+
+    <div class="showcase-frame">
+      <div class="showcase-img-container">
+        <img id="showcaseDisplay" class="showcase-img" src="screenshots/01-miller-columns-view.png" alt="MyFiles Interface Preview">
+      </div>
+      <div class="showcase-meta-bar">
+        <span id="showcaseFeatureTitle" class="showcase-feature-title">Miller Columns View</span>
+        <span id="showcaseFeatureDesc">Hierarchical multi-column browser with inline preview & keyboard arrows</span>
+        <span>Lossless 1440×900 PNG</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bento Grid Features -->
+  <section class="features" id="features">
+    <div class="section-header">
+      <h2 class="section-title">Engineered for Raw Speed</h2>
+      <p class="section-desc">Zero bloat, zero advertising telemetry, and zero virtual DOM reconciliation lag.</p>
+    </div>
+
+    <div class="bento-grid">
+      <div class="bento-card col-7">
+        <div>
+          <div class="card-label">Ergonomics</div>
+          <h3 class="card-title">Finder-Style Miller Columns</h3>
+          <p class="card-text">
+            Traverse deeply nested directory hierarchies effortlessly without losing your navigation context. 2D arrow keys, smooth horizontal scrolling sync, and folder depth badges.
+          </p>
+        </div>
+        <img class="card-preview-thumb" src="screenshots/01-miller-columns-view.png" alt="Miller Columns Preview">
+      </div>
+
+      <div class="bento-card col-5">
+        <div>
+          <div class="card-label">Instant Previews</div>
+          <h3 class="card-title">0ms Spacebar Quick Look</h3>
+          <p class="card-text">
+            Hit <code style="color: #fb923c; font-family: monospace;">Space</code> on any image, video, PDF, or markdown document. Seamless byte-range streaming via native media protocol.
+          </p>
+        </div>
+        <img class="card-preview-thumb" src="screenshots/07-quick-look-preview.png" alt="Quick Look Preview">
+      </div>
+
+      <div class="bento-card col-5">
+        <div>
+          <div class="card-label">Productivity</div>
+          <h3 class="card-title">Split Dual-Pane Workspace</h3>
+          <p class="card-text">
+            Side-by-side file transfer with one-click drive switching tabs (C:, D:, E:), path synchronization, and keyboard focus swapping.
+          </p>
+        </div>
+        <img class="card-preview-thumb" src="screenshots/05-dual-pane-split-workspace.png" alt="Dual Pane Workspace">
+      </div>
+
+      <div class="bento-card col-7">
+        <div>
+          <div class="card-label">Obsidian Glass Aesthetic</div>
+          <h3 class="card-title">High-Contrast Dark Theme</h3>
+          <p class="card-text">
+            Deep #0f172a slate tones, liquid glass optical materials, consistent corner radiuses, and WCAG AA compliant contrast throughout all panels.
+          </p>
+        </div>
+        <img class="card-preview-thumb" src="screenshots/06-preferences-settings-modal.png" alt="Settings Suite">
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Comparison Table -->
+  <section class="table-section" id="comparison">
+    <div class="section-header">
+      <h2 class="section-title">Finder & Explorer Comparison</h2>
+      <p class="section-desc">Why MyFiles provides the superior desktop experience on Windows.</p>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th style="width: 35%;">Capability</th>
+          <th style="width: 20%;">Windows 11 Explorer</th>
+          <th style="width: 20%;">macOS Sequoia Finder</th>
+          <th style="width: 25%;" class="highlight-cell">MyFiles</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Instant Spacebar Quick Look</strong></td>
+          <td>No (Requires add-on)</td>
+          <td>Native</td>
+          <td class="highlight-cell">Instant (Media + PDF + Code + Archive)</td>
+        </tr>
+        <tr>
+          <td><strong>Miller Columns View</strong></td>
+          <td>No</td>
+          <td>Native</td>
+          <td class="highlight-cell">Native with 2D Arrow Keys</td>
+        </tr>
+        <tr>
+          <td><strong>Dual-Pane Split Workspace</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td class="highlight-cell">Built-in (Ctrl+Shift+D)</td>
+        </tr>
+        <tr>
+          <td><strong>Right-Click Context Menu Latency</strong></td>
+          <td>400–800 ms</td>
+          <td>~100 ms</td>
+          <td class="highlight-cell">Instant (0 ms)</td>
+        </tr>
+        <tr>
+          <td><strong>Local Wi-Fi QR Mobile Transfer</strong></td>
+          <td>Cloud only</td>
+          <td>AirDrop (Apple only)</td>
+          <td class="highlight-cell">Any Device via Wi-Fi QR</td>
+        </tr>
+        <tr>
+          <td><strong>2-Phase SHA-256 Deduplication</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td class="highlight-cell">Built-in Native Engine</td>
+        </tr>
+        <tr>
+          <td><strong>Baseline RAM Footprint</strong></td>
+          <td>250–500 MB</td>
+          <td>150–300 MB</td>
+          <td class="highlight-cell">120–180 MB</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/thesatyamjain/myfiles">GitHub Repository</a>
+      <a href="https://github.com/thesatyamjain/myfiles/releases">Releases</a>
+      <a href="https://github.com/thesatyamjain/myfiles/blob/main/LICENSE">MIT License</a>
+      <a href="https://thesoftwareco.pages.dev">The Software Co.</a>
+    </div>
+    <p>MyFiles is an open-source high-performance file manager built with Node.js and Electron.</p>
+  </footer>
+
+  <script>
+    // Tab switching for interactive showcase
+    const tabs = document.querySelectorAll('.tab-btn');
+    const displayImg = document.getElementById('showcaseDisplay');
+    const titleEl = document.getElementById('showcaseFeatureTitle');
+    const descEl = document.getElementById('showcaseFeatureDesc');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const imgSrc = tab.getAttribute('data-img');
+        const name = tab.getAttribute('data-name');
+        const desc = tab.getAttribute('data-desc');
+
+        displayImg.style.opacity = '0.4';
+        setTimeout(() => {
+          displayImg.src = imgSrc;
+          displayImg.style.opacity = '1';
+        }, 120);
+
+        if (titleEl) titleEl.textContent = name;
+        if (descEl) descEl.textContent = desc;
+      });
+    });
+  </script>
+</body>
+</html>

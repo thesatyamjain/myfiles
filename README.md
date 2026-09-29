@@ -2,6 +2,19 @@
 
 A fast, keyboard-first Windows file manager built with Node.js and Electron. Combines the best ergonomics of macOS Finder — Quick Look, Miller Columns, and Colored Tags — with the native power of Windows, while resolving the performance bottlenecks, bloat, and layout flaws of both platforms.
 
+<p align="center">
+  <img src="screenshots/01-miller-columns-view.png" alt="MyFiles Miller Columns View" width="100%" style="border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);" />
+</p>
+
+<p align="center">
+  <a href="#1-4-finder-view-modes"><strong>4 View Modes</strong></a> •
+  <a href="#2-quick-look-preview-engine"><strong>Quick Look</strong></a> •
+  <a href="#3-dual-pane-workspace--tab-management"><strong>Dual Pane</strong></a> •
+  <a href="#configuration--settings"><strong>Obsidian Settings</strong></a> •
+  <a href="https://thesatyamjain.github.io/myfiles/"><strong>Website</strong></a> •
+  <a href="https://github.com/thesatyamjain/myfiles/releases/latest"><strong>Download v1.1.1</strong></a>
+</p>
+
 ---
 
 ## Table of Contents
@@ -111,6 +124,15 @@ MyFiles provides four primary view modes accessible via toolbar buttons or `Ctrl
 | **Miller Columns** | `Ctrl + 3` | Multi-tier hierarchical browser with horizontal scroll sync and persistent inspector. | Deep directory navigation, codebases. |
 | **Gallery View** | `Ctrl + 4` | Large centered media preview with horizontal thumbnail scrubber carousel. | Photo sorting, video review, presentation slides. |
 
+<p align="center">
+  <img src="screenshots/02-grid-icons-view.png" alt="Icons Grid View" width="49%" />
+  <img src="screenshots/03-list-details-view.png" alt="Details List View" width="49%" />
+</p>
+<p align="center">
+  <img src="screenshots/01-miller-columns-view.png" alt="Miller Columns View" width="49%" />
+  <img src="screenshots/04-gallery-view.png" alt="Gallery Media View" width="49%" />
+</p>
+
 - **Transmission Gear Slider:** 4-step icon zoom control (Small, Medium, Large, Extra Large) with a tactile cogwheel slider thumb that smoothly recalculates grid card sizes.
 - **List View Grouping:** Instant group-by engine (by Kind, Date Modified, Size, or Tag) with collapsible group headers that never clip under the sticky column header bar.
 
@@ -119,6 +141,10 @@ MyFiles provides four primary view modes accessible via toolbar buttons or `Ctrl
 ### 2. Quick Look Preview Engine
 
 Press `Space` on any highlighted file or folder to open the centered Quick Look modal. You can keep Quick Look open while tapping `Arrow Up`, `Arrow Down`, `Arrow Left`, or `Arrow Right` to cycle previews across items instantly.
+
+<p align="center">
+  <img src="screenshots/07-quick-look-preview.png" alt="Quick Look Preview Modal" width="85%" />
+</p>
 
 #### Supported Format Matrix
 
@@ -144,6 +170,10 @@ Press `Space` on any highlighted file or folder to open the centered Quick Look 
   - **Quick Drive Jumpers:** Independent drive dropdowns in each pane header for fast cross-disk operations.
 - **Tab Management:** Full browser-style tab bar supporting `Ctrl+T` (new tab), `Ctrl+W` (close tab), middle-click tab close, duplicate tab, and drag-and-drop tab reordering.
 - **Multi-Window Desktop Architecture (`Ctrl+N`):** Open independent MyFiles desktop windows with separate folder histories, selection contexts, and IPC channels.
+
+<p align="center">
+  <img src="screenshots/05-dual-pane-split-workspace.png" alt="Dual Pane Split Workspace" width="85%" />
+</p>
 
 ---
 
@@ -313,6 +343,10 @@ When running via `npm run server`, the application exposes a clean REST API on p
 ---
 
 ## Configuration & Settings
+
+<p align="center">
+  <img src="screenshots/06-preferences-settings-modal.png" alt="Preferences & Settings Suite" width="85%" />
+</p>
 
 Settings are persisted in JSON format at `%APPDATA%\MyFiles\MyFilesConfig\settings.json`:
 
