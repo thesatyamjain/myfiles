@@ -371,6 +371,14 @@ function createWindow(initialTarget = null) {
     console.error('Failed to load application:', err);
   });
 
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[MyFiles] Render process gone:', details);
+  });
+
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error('[MyFiles] Failed to load application UI:', errorCode, errorDescription);
+  });
+
   win.on('maximize', () => {
     if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
       win.webContents.send('window-state', { isMaximized: true });
