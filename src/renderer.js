@@ -298,6 +298,14 @@
     colShowTag: (function() {
       try { return localStorage.getItem('myfiles_col_tag') !== 'false'; } catch(e) { return true; }
     })(),
+    showItemInfo: (function() {
+      try { return localStorage.getItem('myfiles_show_item_info') !== 'false'; } catch(e) { return true; }
+    })(),
+    reduceTransparency: (function() {
+      try { return localStorage.getItem('myfiles_reduce_transparency') === 'true'; } catch(e) { return false; }
+    })(),
+    folderItemCounts: new Map(),
+    imageDimensions: new Map(),
     sidebarShowRecents: (function() {
       try { return localStorage.getItem('myfiles_sb_recents') !== 'false'; } catch(e) { return true; }
     })(),
@@ -758,7 +766,6 @@
     btnQuickLook: document.getElementById('btnQuickLook'),
     btnTerminal: document.getElementById('btnTerminal'),
     btnToggleHidden: document.getElementById('btnToggleHidden'),
-    hiddenSlash: document.getElementById('hiddenSlash'),
     btnToggleCheckboxes: document.getElementById('btnToggleCheckboxes'),
     btnUndo: document.getElementById('btnUndo'),
     btnRedo: document.getElementById('btnRedo'),
@@ -974,9 +981,7 @@
     // Appearance Theme Switcher
     themeSegmentedCtrl: document.getElementById('settingsThemeCtrl'),
 
-    // Toolbar Settings & Preferences Modal
-    btnToolbarSettings: document.getElementById('btnToolbarSettings'),
-    btnTitlebarSettings: document.getElementById('btnTitlebarSettings'),
+    // Settings & Preferences Modal
     sidebarSettings: document.getElementById('sidebarSettings'),
     moreActPreferences: document.getElementById('moreActPreferences'),
     ctxPreferences: document.getElementById('ctxPreferences'),
@@ -1055,6 +1060,7 @@
     voChkPreviewCol: document.getElementById('voChkPreviewCol'),
     voChkIconPreview: document.getElementById('voChkIconPreview'),
     voChkFilename: document.getElementById('voChkFilename'),
+    voChkItemInfo: document.getElementById('voChkItemInfo'),
     voBtnDefaults: document.getElementById('voBtnDefaults'),
     sortOptShowViewOptions: document.getElementById('sortOptShowViewOptions'),
     moreActViewOptions: document.getElementById('moreActViewOptions'),
@@ -1280,6 +1286,9 @@
   // --- INITIALIZATION ---
   async function init() {
     initTheme();
+    if (state.reduceTransparency) {
+      document.body.classList.add('reduce-transparency');
+    }
     setupWindowControls();
     setupEventListeners();
     applyGear(state.currentGear || 2, true);
@@ -2969,6 +2978,10 @@
       const colEl = document.createElement('div');
       colEl.className = `column-pane ${colIdx === state.activeColumnIndex ? 'active-col' : ''}`;
       colEl.dataset.colIndex = colIdx;
+      const savedWidth = (state.columnWidths && state.columnWidths[col.path]) || 275;
+      colEl.style.width = savedWidth + 'px';
+      colEl.style.minWidth = savedWidth + 'px';
+      colEl.style.maxWidth = savedWidth + 'px';
 
       // Column Header with path segment name, item count & interactive sort indicator
       const colSegName = col.path.replace(/[\\/]$/, '').split(/[\\/]/).pop() || col.path;
@@ -3142,6 +3155,67 @@
         }
       });
 
+      // Column Resizer Handle (Drag to resize, double click to auto-fit widest item)
+      const resizer = document.createElement('div');
+      resizer.className = 'column-resizer';
+      resizer.title = 'Drag to resize column · Double-click to auto-fit content';
+
+      let startX = 0;
+      let startW = savedWidth;
+
+      const onColMouseMove = (ev) => {
+        const delta = ev.clientX - startX;
+        const newW = Math.max(180, Math.min(600, startW + delta));
+        colEl.style.width = newW + 'px';
+        colEl.style.minWidth = newW + 'px';
+        colEl.style.maxWidth = newW + 'px';
+        state.columnWidths = state.columnWidths || {};
+        state.columnWidths[col.path] = newW;
+      };
+
+      const onColMouseUp = () => {
+        resizer.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onColMouseMove);
+        window.removeEventListener('mouseup', onColMouseUp);
+      };
+
+      resizer.addEventListener('mousedown', (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        startX = ev.clientX;
+        startW = parseInt(colEl.style.width, 10) || 275;
+        resizer.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        window.addEventListener('mousemove', onColMouseMove);
+        window.addEventListener('mouseup', onColMouseUp);
+      });
+
+      // Double-click auto-fit (macOS Finder parity)
+      resizer.addEventListener('dblclick', (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        let maxTextW = 120;
+        const nameEls = colEl.querySelectorAll('.column-name');
+        nameEls.forEach(elName => {
+          if (elName.scrollWidth > maxTextW) {
+            maxTextW = elName.scrollWidth;
+          }
+        });
+        const fittedW = Math.max(200, Math.min(550, maxTextW + 80));
+        colEl.style.width = fittedW + 'px';
+        colEl.style.minWidth = fittedW + 'px';
+        colEl.style.maxWidth = fittedW + 'px';
+        state.columnWidths = state.columnWidths || {};
+        state.columnWidths[col.path] = fittedW;
+        if (typeof showToast === 'function') {
+          showToast(`Column fitted to ${fittedW}px`, 'info');
+        }
+      });
+
+      colEl.appendChild(resizer);
       container.appendChild(colEl);
     });
 
@@ -3306,7 +3380,7 @@
         </span>
       </div>
 
-      <div class="cp-actions">
+      <div class="cp-actions" style="display: flex; flex-direction: column; gap: 8px;">
         <button class="tool-btn btn-primary" id="cpBtnQuickLook" style="width: 100%; justify-content: center;">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Quick Look (Space)
@@ -3315,6 +3389,23 @@
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           Open with Default App
         </button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+          ${isImg ? `
+            <button class="tool-btn" id="cpBtnRotate" style="justify-content: center; font-size: 11px; padding: 5px 8px;">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Rotate 90°
+            </button>
+          ` : `
+            <button class="tool-btn" id="cpBtnCopyPath" style="justify-content: center; font-size: 11px; padding: 5px 8px;">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy Path
+            </button>
+          `}
+          <button class="tool-btn" id="cpBtnShare" style="justify-content: center; font-size: 11px; padding: 5px 8px;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share...
+          </button>
+        </div>
       </div>
     `;
 
@@ -3329,6 +3420,36 @@
 
     pane.querySelector('#cpBtnQuickLook').addEventListener('click', () => openQuickLook(item));
     pane.querySelector('#cpBtnOpen').addEventListener('click', () => api.openItem(item.path));
+
+    if (pane.querySelector('#cpBtnRotate')) {
+      let currentRotation = 0;
+      pane.querySelector('#cpBtnRotate').addEventListener('click', () => {
+        currentRotation = (currentRotation + 90) % 360;
+        const imgEl = pane.querySelector('.cp-thumb-img');
+        if (imgEl) {
+          imgEl.style.transform = `rotate(${currentRotation}deg)`;
+          imgEl.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+        }
+        if (typeof showToast === 'function') {
+          showToast(`Rotated to ${currentRotation}°`, 'info');
+        }
+      });
+    }
+
+    if (pane.querySelector('#cpBtnCopyPath')) {
+      pane.querySelector('#cpBtnCopyPath').addEventListener('click', () => {
+        navigator.clipboard.writeText(item.path);
+        if (typeof showToast === 'function') {
+          showToast('Path copied to clipboard', 'success');
+        }
+      });
+    }
+
+    if (pane.querySelector('#cpBtnShare')) {
+      pane.querySelector('#cpBtnShare').addEventListener('click', () => {
+        openShareModal(item);
+      });
+    }
 
     return pane;
   }
@@ -3484,6 +3605,115 @@
     showToast(state.groupBy === 'none' ? 'Grouping turned off' : `Grouped by ${groupLabelMap[state.groupBy] || state.groupBy}`, 'info');
   }
 
+  function showListColumnContextMenu(x, y) {
+    hideContextMenu();
+    let menu = document.getElementById('listColumnContextMenu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'listColumnContextMenu';
+      menu.className = 'context-menu list-column-context-menu';
+      document.body.appendChild(menu);
+
+      window.addEventListener('click', (e) => {
+        if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) {
+          menu.style.display = 'none';
+        }
+      }, { capture: true });
+    }
+
+    const columns = [
+      { key: 'colShowDate', label: 'Date Modified', active: state.colShowDate !== false, storage: 'myfiles_col_date' },
+      { key: 'colShowType', label: 'Kind / Type', active: state.colShowType !== false, storage: 'myfiles_col_type' },
+      { key: 'colShowSize', label: 'Size', active: state.colShowSize !== false, storage: 'myfiles_col_size' },
+      { key: 'colShowTag', label: 'Tags', active: state.colShowTag !== false, storage: 'myfiles_col_tag' }
+    ];
+
+    let itemsHtml = `
+      <div class="ctx-header" style="padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">
+        Columns
+      </div>
+    `;
+
+    columns.forEach(col => {
+      itemsHtml += `
+        <div class="ctx-item" data-col="${col.key}">
+          <span class="ctx-icon" style="color: var(--accent); font-weight: bold; font-size: 12px;">${col.active ? '✓' : ''}</span>
+          <span>${col.label}</span>
+        </div>
+      `;
+    });
+
+    itemsHtml += `
+      <div class="ctx-divider"></div>
+      <div class="ctx-item" data-action="reset-defaults">
+        <span class="ctx-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 13px; height: 13px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+        </span>
+        <span>Reset to Defaults</span>
+      </div>
+    `;
+
+    menu.innerHTML = itemsHtml;
+
+    menu.querySelectorAll('.ctx-item[data-col]').forEach(elItem => {
+      elItem.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const colKey = elItem.dataset.col;
+        const colDef = columns.find(c => c.key === colKey);
+        if (!colDef) return;
+
+        const newVal = !colDef.active;
+        state[colKey] = newVal;
+        try { localStorage.setItem(colDef.storage, String(newVal)); } catch (err) {}
+
+        if (colKey === 'colShowDate' && el.settingsCheckColDate) el.settingsCheckColDate.checked = newVal;
+        if (colKey === 'colShowType' && el.settingsCheckColType) el.settingsCheckColType.checked = newVal;
+        if (colKey === 'colShowSize' && el.settingsCheckColSize) el.settingsCheckColSize.checked = newVal;
+        if (colKey === 'colShowTag' && el.settingsCheckColTag) el.settingsCheckColTag.checked = newVal;
+
+        menu.style.display = 'none';
+        renderListView();
+        if (typeof showToast === 'function') {
+          showToast(`${colDef.label} column ${newVal ? 'shown' : 'hidden'}`, 'info');
+        }
+      });
+    });
+
+    const resetBtn = menu.querySelector('.ctx-item[data-action="reset-defaults"]');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        state.colShowDate = true;
+        state.colShowType = true;
+        state.colShowSize = true;
+        state.colShowTag = true;
+        try {
+          localStorage.setItem('myfiles_col_date', 'true');
+          localStorage.setItem('myfiles_col_type', 'true');
+          localStorage.setItem('myfiles_col_size', 'true');
+          localStorage.setItem('myfiles_col_tag', 'true');
+        } catch (err) {}
+        if (el.settingsCheckColDate) el.settingsCheckColDate.checked = true;
+        if (el.settingsCheckColType) el.settingsCheckColType.checked = true;
+        if (el.settingsCheckColSize) el.settingsCheckColSize.checked = true;
+        if (el.settingsCheckColTag) el.settingsCheckColTag.checked = true;
+        menu.style.display = 'none';
+        renderListView();
+        if (typeof showToast === 'function') {
+          showToast('List columns reset to defaults', 'info');
+        }
+      });
+    }
+
+    menu.style.display = 'block';
+    const menuWidth = 195;
+    const menuHeight = menu.offsetHeight || 160;
+    const finalX = Math.min(x, window.innerWidth - menuWidth - 8);
+    const finalY = Math.min(y, window.innerHeight - menuHeight - 8);
+    menu.style.left = `${Math.max(8, finalX)}px`;
+    menu.style.top = `${Math.max(8, finalY)}px`;
+  }
+
   // --- 2. LIST VIEW (Hierarchical Tree Expansion - Reference 4) ---
   function renderListView() {
     el.primaryViewport.innerHTML = '';
@@ -3516,6 +3746,7 @@
     // Header with sortable columns
     const header = document.createElement('div');
     header.className = 'list-header';
+    header.title = 'Right-click header to choose visible columns';
     const chkHeaderHtml = state.itemCheckboxes
       ? `<input type="checkbox" id="listCheckAll" class="item-checkbox" title="Select all items" style="margin-right: 8px;">`
       : '';
@@ -3545,6 +3776,12 @@
         sortCurrentItems();
         renderListView();
       });
+    });
+
+    header.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showListColumnContextMenu(e.clientX, e.clientY);
     });
 
     container.appendChild(header);
@@ -3789,7 +4026,39 @@
       itemEl.draggable = true;
 
       const tag = state.tags[item.path];
-      const subLabel = item.isDirectory ? 'Folder' : formatBytes(item.size);
+      let subLabel = '';
+      if (state.showItemInfo !== false) {
+        if (item.isDirectory) {
+          if (state.folderItemCounts && state.folderItemCounts.has(item.path)) {
+            const cnt = state.folderItemCounts.get(item.path);
+            subLabel = cnt === 0 ? 'Zero items' : (cnt === 1 ? '1 item' : `${cnt} items`);
+          } else {
+            subLabel = 'Folder';
+            if (!state.folderItemCounts) state.folderItemCounts = new Map();
+            if (api && api.getFileDetails) {
+              api.getFileDetails(item.path).then(res => {
+                if (res && res.success && res.fileCount !== undefined) {
+                  state.folderItemCounts.set(item.path, res.fileCount);
+                  const subEl = itemEl.querySelector('.grid-sub');
+                  if (subEl && itemEl.isConnected) {
+                    const cnt = res.fileCount;
+                    subEl.textContent = cnt === 0 ? 'Zero items' : (cnt === 1 ? '1 item' : `${cnt} items`);
+                  }
+                }
+              }).catch(() => {});
+            }
+          }
+        } else if (isImageFile(item)) {
+          if (state.imageDimensions && state.imageDimensions.has(item.path)) {
+            subLabel = state.imageDimensions.get(item.path);
+          } else {
+            subLabel = formatBytes(item.size);
+          }
+        } else {
+          subLabel = formatBytes(item.size);
+        }
+      }
+
       const chkHtml = state.itemCheckboxes
         ? `<input type="checkbox" class="item-checkbox" ${isSelected ? 'checked' : ''} />`
         : '';
@@ -3804,9 +4073,28 @@
             ${tag ? `<span class="tag-dot inline ${tag}"></span>` : ''}
             <span class="grid-name-pill">${escapeHtml(formatItemName(item))}</span>
           </div>
-          <span class="grid-sub">${subLabel}</span>
+          ${subLabel ? `<span class="grid-sub">${subLabel}</span>` : ''}
         ` : ''}
       `;
+
+      if (isImageFile(item)) {
+        const thumbImg = itemEl.querySelector('.grid-thumb-img');
+        if (thumbImg) {
+          thumbImg.addEventListener('load', () => {
+            if (thumbImg.naturalWidth && thumbImg.naturalHeight) {
+              const dimStr = `${thumbImg.naturalWidth} × ${thumbImg.naturalHeight}`;
+              if (!state.imageDimensions) state.imageDimensions = new Map();
+              state.imageDimensions.set(item.path, dimStr);
+              if (state.showItemInfo !== false) {
+                const subEl = itemEl.querySelector('.grid-sub');
+                if (subEl && itemEl.isConnected) {
+                  subEl.textContent = dimStr;
+                }
+              }
+            }
+          });
+        }
+      }
 
       if (state.itemCheckboxes) {
         const chk = itemEl.querySelector('.item-checkbox');
@@ -4870,6 +5158,10 @@
     state.quickLookFlipH = false;
     if (el.qlImageTools) el.qlImageTools.style.display = 'none';
     if (el.qlInfoHud) el.qlInfoHud.style.display = 'none';
+    const pdfWrap = el.qlBody.querySelector('#qlPdfCanvasWrap');
+    if (pdfWrap && typeof pdfWrap._cleanupPdfPan === 'function') {
+      pdfWrap._cleanupPdfPan();
+    }
     el.quickLookOverlay.style.display = 'none';
     el.qlBody.innerHTML = '';
   }
@@ -5037,6 +5329,11 @@
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
     } catch {}
 
+    const oldWrap = el.qlBody.querySelector('#qlPdfCanvasWrap');
+    if (oldWrap && typeof oldWrap._cleanupPdfPan === 'function') {
+      oldWrap._cleanupPdfPan();
+    }
+
     el.qlBody.innerHTML = `
       <div class="ql-pdf-container">
         <div class="ql-pdf-toolbar">
@@ -5052,6 +5349,15 @@
             </button>
           </div>
           <div class="ql-pdf-controls-center">
+            <button class="ql-pdf-btn active" id="qlPdfHandTool" title="Hand Tool (H / Drag to Pan)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 11V6a2 2 0 0 0-4 0v4"/>
+                <path d="M14 10V4a2 2 0 0 0-4 0v6"/>
+                <path d="M10 10.5V6a2 2 0 0 0-4 0v8"/>
+                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+              </svg>
+              <span>Hand</span>
+            </button>
             <button class="ql-pdf-btn" id="qlPdfZoomOut" title="Zoom Out (-)">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             </button>
@@ -5071,7 +5377,7 @@
             </button>
           </div>
         </div>
-        <div class="ql-pdf-canvas-wrap" id="qlPdfCanvasWrap">
+        <div class="ql-pdf-canvas-wrap hand-tool-active" id="qlPdfCanvasWrap">
           <canvas id="qlPdfCanvas" class="ql-pdf-canvas ${state.pdfDarkMode ? 'dark-invert' : ''}"></canvas>
         </div>
       </div>
@@ -5079,6 +5385,7 @@
 
     const canvas = el.qlBody.querySelector('#qlPdfCanvas');
     const wrap = el.qlBody.querySelector('#qlPdfCanvasWrap');
+    const btnHand = el.qlBody.querySelector('#qlPdfHandTool');
     const btnPrev = el.qlBody.querySelector('#qlPdfPrev');
     const btnNext = el.qlBody.querySelector('#qlPdfNext');
     const inpPage = el.qlBody.querySelector('#qlPdfPageNum');
@@ -5141,6 +5448,103 @@
 
       await renderPage(pageNum);
 
+      // Hand tool and mouse pan support
+      let isHandActive = true;
+      let isPanning = false;
+      let startX = 0;
+      let startY = 0;
+      let scrollStartX = 0;
+      let scrollStartY = 0;
+      let isFlipping = false;
+
+      if (btnHand) {
+        btnHand.onclick = () => {
+          isHandActive = !isHandActive;
+          btnHand.classList.toggle('active', isHandActive);
+          if (wrap) wrap.classList.toggle('hand-tool-active', isHandActive);
+        };
+      }
+
+      const onMouseDown = (e) => {
+        const isLeft = e.button === 0;
+        const isMiddle = e.button === 1;
+        if (!isMiddle && (!isLeft || !isHandActive)) return;
+        if (e.target.closest('button, input, select')) return;
+
+        isPanning = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        scrollStartX = wrap.scrollLeft;
+        scrollStartY = wrap.scrollTop;
+        wrap.classList.add('is-grabbing');
+        e.preventDefault();
+      };
+
+      const onMouseMove = (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        wrap.scrollLeft = scrollStartX - dx;
+        wrap.scrollTop = scrollStartY - dy;
+
+        // Pull-to-flip gesture at boundaries
+        if (!isFlipping && pdfDoc && pdfDoc.numPages > 1) {
+          const atTop = wrap.scrollTop <= 0;
+          const atBottom = Math.ceil(wrap.scrollTop + wrap.clientHeight) >= wrap.scrollHeight - 2;
+
+          if (atTop && dy > 80 && pageNum > 1) {
+            isFlipping = true;
+            pageNum--;
+            renderPage(pageNum).then(() => {
+              wrap.scrollTop = wrap.scrollHeight - wrap.clientHeight;
+              setTimeout(() => { isFlipping = false; }, 350);
+            });
+          } else if (atBottom && dy < -80 && pageNum < pdfDoc.numPages) {
+            isFlipping = true;
+            pageNum++;
+            renderPage(pageNum).then(() => {
+              wrap.scrollTop = 0;
+              setTimeout(() => { isFlipping = false; }, 350);
+            });
+          }
+        }
+      };
+
+      const onMouseUp = () => {
+        if (isPanning) {
+          isPanning = false;
+          wrap.classList.remove('is-grabbing');
+        }
+      };
+
+      const onWheel = (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.15 : -0.15;
+          const newScale = Math.min(3.5, Math.max(0.5, +(scale + delta).toFixed(2)));
+          if (newScale !== scale) {
+            scale = newScale;
+            renderPage(pageNum);
+          }
+        }
+      };
+
+      if (wrap) {
+        wrap.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        wrap.addEventListener('wheel', onWheel, { passive: false });
+
+        wrap._cleanupPdfPan = () => {
+          wrap.removeEventListener('mousedown', onMouseDown);
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          wrap.removeEventListener('wheel', onWheel);
+        };
+      }
+
       if (btnPrev) {
         btnPrev.onclick = () => {
           if (pageNum > 1) {
@@ -5202,6 +5606,10 @@
         };
       }
     } catch (err) {
+      const oldWrapCatch = el.qlBody.querySelector('#qlPdfCanvasWrap');
+      if (oldWrapCatch && typeof oldWrapCatch._cleanupPdfPan === 'function') {
+        oldWrapCatch._cleanupPdfPan();
+      }
       console.warn('PDF.js render failed, falling back to iframe:', err);
       el.qlBody.innerHTML = `
         <iframe src="${preview.url}" style="width: 100%; height: 100%; border: none; border-radius: var(--radius-md);"></iframe>
@@ -6268,9 +6676,6 @@
 
   function toggleHiddenFiles() {
     state.showHidden = !state.showHidden;
-    if (el.hiddenSlash) {
-      el.hiddenSlash.style.display = state.showHidden ? 'none' : 'block';
-    }
     el.btnToggleHidden.classList.toggle('active', state.showHidden);
     if (el.settingsCheckHidden) {
       el.settingsCheckHidden.checked = state.showHidden;
@@ -7089,6 +7494,9 @@
     if (el.voChkFilename) {
       el.voChkFilename.checked = state.showThumbFilename !== false;
     }
+    if (el.voChkItemInfo) {
+      el.voChkItemInfo.checked = state.showItemInfo !== false;
+    }
 
     const thumbRadio = el.viewOptionsPanel.querySelector(`input[name="voThumbSize"][value="${state.thumbSize || 'medium'}"]`);
     if (thumbRadio) thumbRadio.checked = true;
@@ -7246,7 +7654,8 @@
       thumbSize: state.thumbSize || 'medium',
       previewCol: el.voChkPreviewCol ? el.voChkPreviewCol.checked : state.previewPaneOpen,
       iconPreview: el.voChkIconPreview ? el.voChkIconPreview.checked : true,
-      showFilename: el.voChkFilename ? el.voChkFilename.checked : true
+      showFilename: el.voChkFilename ? el.voChkFilename.checked : true,
+      showItemInfo: el.voChkItemInfo ? el.voChkItemInfo.checked : true
     };
     try {
       localStorage.setItem('myfiles_view_defaults', JSON.stringify(state.viewDefaults));
@@ -9989,13 +10398,7 @@
       });
     });
 
-    // Toolbar & Titlebar & Sidebar Settings Buttons & Preferences Modal
-    if (el.btnToolbarSettings) {
-      el.btnToolbarSettings.addEventListener('click', openSettingsModal);
-    }
-    if (el.btnTitlebarSettings) {
-      el.btnTitlebarSettings.addEventListener('click', openSettingsModal);
-    }
+    // Sidebar Settings Button & Preferences Modal
     if (el.sidebarSettings) {
       el.sidebarSettings.addEventListener('click', openSettingsModal);
     }
@@ -10599,6 +11002,15 @@
     if (el.voChkFilename) {
       el.voChkFilename.addEventListener('change', (e) => {
         state.showThumbFilename = e.target.checked;
+        renderCurrentView();
+      });
+    }
+    if (el.voChkItemInfo) {
+      el.voChkItemInfo.addEventListener('change', (e) => {
+        state.showItemInfo = e.target.checked;
+        try {
+          localStorage.setItem('myfiles_show_item_info', String(state.showItemInfo));
+        } catch(err) {}
         renderCurrentView();
       });
     }
@@ -11762,16 +12174,34 @@
           if (el.qlBtnZoomIn && isImageFile(state.quickLookFile)) {
             e.preventDefault();
             el.qlBtnZoomIn.click();
+          } else {
+            const btnPdfZoomIn = el.qlBody.querySelector('#qlPdfZoomIn');
+            if (btnPdfZoomIn) {
+              e.preventDefault();
+              btnPdfZoomIn.click();
+            }
           }
         } else if ((e.key === '-' || e.key === '_') && !e.ctrlKey) {
           if (el.qlBtnZoomOut && isImageFile(state.quickLookFile)) {
             e.preventDefault();
             el.qlBtnZoomOut.click();
+          } else {
+            const btnPdfZoomOut = el.qlBody.querySelector('#qlPdfZoomOut');
+            if (btnPdfZoomOut) {
+              e.preventDefault();
+              btnPdfZoomOut.click();
+            }
           }
         } else if (e.key === '0' && !e.ctrlKey) {
           if (el.qlBtnZoomFit && isImageFile(state.quickLookFile)) {
             e.preventDefault();
             el.qlBtnZoomFit.click();
+          } else {
+            const btnPdfFit = el.qlBody.querySelector('#qlPdfFitWidth');
+            if (btnPdfFit) {
+              e.preventDefault();
+              btnPdfFit.click();
+            }
           }
         } else if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
           if (el.qlBtnMaximize) {
@@ -11782,6 +12212,24 @@
           if (el.qlBtnFlipH && isImageFile(state.quickLookFile)) {
             e.preventDefault();
             el.qlBtnFlipH.click();
+          } else {
+            const btnPdfHand = el.qlBody.querySelector('#qlPdfHandTool');
+            if (btnPdfHand) {
+              e.preventDefault();
+              btnPdfHand.click();
+            }
+          }
+        } else if (e.key === 'PageUp') {
+          const btnPdfPrev = el.qlBody.querySelector('#qlPdfPrev');
+          if (btnPdfPrev && !btnPdfPrev.disabled) {
+            e.preventDefault();
+            btnPdfPrev.click();
+          }
+        } else if (e.key === 'PageDown') {
+          const btnPdfNext = el.qlBody.querySelector('#qlPdfNext');
+          if (btnPdfNext && !btnPdfNext.disabled) {
+            e.preventDefault();
+            btnPdfNext.click();
           }
         } else if ((e.key === 'i' || e.key === 'I') && !e.ctrlKey && !e.metaKey) {
           e.preventDefault();
@@ -12113,6 +12561,25 @@
       scrollActiveItemIntoView();
     }
   }
+
+  // macOS Liquid Glass pointer specular reflection tracker (lightweight, throttled by rAF)
+  let lastGlassPointerRaf = 0;
+  document.addEventListener('pointermove', (e) => {
+    if (lastGlassPointerRaf) return;
+    lastGlassPointerRaf = requestAnimationFrame(() => {
+      lastGlassPointerRaf = 0;
+      const target = e.target && e.target.closest && e.target.closest('.view-switcher, .quicklook-dialog, .modal-card, .context-menu, .settings-modal, .properties-card, .column-pane');
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          target.style.setProperty('--mouse-x', `${x.toFixed(1)}%`);
+          target.style.setProperty('--mouse-y', `${y.toFixed(1)}%`);
+        }
+      }
+    });
+  }, { passive: true });
 
   // Run initial mount
   window.addEventListener('DOMContentLoaded', init);

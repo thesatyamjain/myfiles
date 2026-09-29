@@ -156,6 +156,8 @@ if (!gotTheLock) {
         if (win.isMinimized()) win.restore();
         win.show();
         win.focus();
+        win.setAlwaysOnTop(true);
+        win.setAlwaysOnTop(false);
       }
     }
   });
@@ -182,6 +184,8 @@ function createWindow(initialTarget = null) {
     }
   }
 
+  const isWin11OrLater = process.platform === 'win32' && parseInt((os.release() || '').split('.')[2] || '0', 10) >= 22000;
+
   const win = new BrowserWindow({
     width: 1320,
     height: 860,
@@ -189,9 +193,10 @@ function createWindow(initialTarget = null) {
     minHeight: 560,
     x,
     y,
+    show: false,
     frame: false,
-    titleBarStyle: 'hidden',
-    backgroundColor: '#0f172a',
+    backgroundMaterial: isWin11OrLater ? 'acrylic' : undefined,
+    backgroundColor: isWin11OrLater ? '#00000000' : '#0f172a',
     icon: (appNativeIcon && !appNativeIcon.isEmpty()) ? appNativeIcon : (fs.existsSync(appIconPath) ? appIconPath : undefined),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -200,6 +205,19 @@ function createWindow(initialTarget = null) {
       webSecurity: false // Allows previewing local media files seamlessly in Quick Look
     }
   });
+
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
+  });
+
+  // Fallback: guarantee the window is shown if ready-to-show is missed or delayed
+  setTimeout(() => {
+    if (!win.isDestroyed() && !win.isVisible()) {
+      win.show();
+      win.focus();
+    }
+  }, 600);
 
   if (appNativeIcon && !appNativeIcon.isEmpty()) {
     try { win.setIcon(appNativeIcon); } catch {}
@@ -235,11 +253,13 @@ function createWindow(initialTarget = null) {
   if (targetPath) query.path = targetPath;
   if (selectItem) query.select = selectItem;
 
-  if (targetPath) {
-    win.loadFile(path.join(__dirname, 'src', 'index.html'), { query });
-  } else {
-    win.loadFile(path.join(__dirname, 'src', 'index.html'));
-  }
+  const loadPromise = targetPath
+    ? win.loadFile(path.join(__dirname, 'src', 'index.html'), { query })
+    : win.loadFile(path.join(__dirname, 'src', 'index.html'));
+
+  loadPromise.catch(err => {
+    console.error('Failed to load application:', err);
+  });
 
   win.on('maximize', () => {
     if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {

@@ -816,10 +816,8 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   const dedupSizes = [0, 1024, 1048576, 10485760];
   assert(dedupModes.includes('sha256') && dedupSizes.includes(1048576));
 
-  // Settings entry points verification (Toolbar, Titlebar, Sidebar, Dropdown, Context Menu, Shortcut)
+  // Settings entry points verification (Sidebar, Dropdown, Context Menu, Shortcut)
   const indexHtml = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
-  assert(indexHtml.includes('id="btnToolbarSettings"'), 'btnToolbarSettings entry point must exist');
-  assert(indexHtml.includes('id="btnTitlebarSettings"'), 'btnTitlebarSettings entry point must exist');
   assert(indexHtml.includes('id="sidebarSettings"'), 'sidebarSettings entry point must exist');
   assert(indexHtml.includes('id="moreActPreferences"'), 'moreActPreferences entry point must exist in More Actions dropdown');
   assert(indexHtml.includes('id="ctxPreferences"'), 'ctxPreferences entry point must exist in Context Menu');
@@ -1682,7 +1680,7 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   console.log(`✓ Whole-file syntax validation passed for all ${jsFilesToValidate.length} core JS files`);
 
   // 48. DOM Integrity & Element ID Parity Check
-  const dynamicTemplateIds = new Set(['backendOfflineBanner', 'btnRetryBackend', 'tabContextMenu', 'recycleContextMenu', 'galleryHeroImg', 'ppHeroThumb']);
+  const dynamicTemplateIds = new Set(['backendOfflineBanner', 'btnRetryBackend', 'tabContextMenu', 'recycleContextMenu', 'galleryHeroImg', 'ppHeroThumb', 'listColumnContextMenu']);
   const idMatches = Array.from(updatedRenderer.matchAll(/document\.getElementById\(['"]([^'"]+)['"]\)/g)).map(m => m[1]);
   const missingFromHtml = idMatches.filter(id => !dynamicTemplateIds.has(id) && !updatedIndex.includes(`id="${id}"`) && !updatedIndex.includes(`id='${id}'`));
   if (missingFromHtml.length > 0) {
@@ -1804,7 +1802,36 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(serverCode.includes("pathname === '/api/is-default'"), 'server.js must handle /api/is-default route');
   assert(updatedRenderer.includes('updateDefaultFileManagerButtons'), 'renderer.js must implement updateDefaultFileManagerButtons');
   assert(updatedIndex.includes('id="settingsBtnRestoreDefault" style="display: none;'), 'index.html must hide settingsBtnRestoreDefault initially to prevent both buttons showing at once');
-  console.log('✓ Default Windows File Manager Registry Integration Suite verified');
+  // 55. macOS Finder Advanced Parity Suite (Miller Column Resizing, Quick Actions, List Column Menu, Grid Subtitles)
+  const stylesCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+  assert(updatedRenderer.includes('column-resizer'), 'renderer.js must create column-resizer handles for Miller Columns');
+  assert(stylesCode.includes('.column-resizer'), 'styles.css must style .column-resizer handle');
+  assert(updatedRenderer.includes('resizer.addEventListener(\'dblclick\''), 'renderer.js must implement double-click auto-fit on column resizer');
+  assert(updatedRenderer.includes('cpBtnRotate'), 'renderer.js must wire cpBtnRotate Quick Action in column preview');
+  assert(updatedRenderer.includes('cpBtnShare'), 'renderer.js must wire cpBtnShare Quick Action in column preview');
+  assert(updatedRenderer.includes('showListColumnContextMenu'), 'renderer.js must implement showListColumnContextMenu');
+  assert(stylesCode.includes('.list-column-context-menu'), 'styles.css must style .list-column-context-menu');
+  assert(updatedRenderer.includes('state.showItemInfo'), 'renderer.js must support state.showItemInfo');
+  assert(updatedIndex.includes('id="voChkItemInfo"'), 'index.html must include voChkItemInfo in view options panel');
+  // 56. Quick Look PDF Hand Tool, Pan Drag & Boundary Gesture Suite
+  assert(updatedRenderer.includes('id="qlPdfHandTool"'), 'renderer.js must include qlPdfHandTool button in PDF preview toolbar');
+  assert(updatedRenderer.includes('hand-tool-active'), 'renderer.js must set hand-tool-active class on PDF canvas wrapper');
+  assert(stylesCode.includes('.ql-pdf-canvas-wrap.hand-tool-active'), 'styles.css must style .ql-pdf-canvas-wrap.hand-tool-active with grab cursor');
+  assert(stylesCode.includes('.ql-pdf-canvas-wrap.hand-tool-active.is-grabbing'), 'styles.css must style .is-grabbing with grabbing cursor');
+  assert(updatedRenderer.includes('_cleanupPdfPan'), 'renderer.js must implement _cleanupPdfPan for zero-leak listener teardown');
+  assert(updatedRenderer.includes('scrollStartX - dx'), 'renderer.js must calculate horizontal pan offset');
+  console.log('✓ macOS Finder Advanced Parity Suite (Miller Columns, Quick Actions, List Header & Grid Subtitles) verified');
+  console.log('✓ Quick Look PDF Hand Move, Pan Drag & Boundary Gesture Suite verified');
+
+  // 57. macOS Finder Liquid Glass Optical Materials Suite
+  assert(stylesCode.includes('--liquid-glass-bg:'), 'styles.css must define --liquid-glass-bg token');
+  assert(stylesCode.includes('--liquid-filter:'), 'styles.css must define --liquid-filter optical refraction token');
+  assert(stylesCode.includes('--liquid-rim-top:'), 'styles.css must define --liquid-rim-top specular highlight token');
+  assert(stylesCode.includes('--liquid-shadow-floating:'), 'styles.css must define --liquid-shadow-floating diffuse shadow token');
+  assert(stylesCode.includes('.reduce-transparency'), 'styles.css must support .reduce-transparency accessibility class');
+  assert(mainCode.includes("backgroundMaterial: isWin11OrLater ? 'acrylic' : undefined"), 'main.js must configure Windows 11 acrylic material');
+  assert(updatedRenderer.includes('lastGlassPointerRaf'), 'renderer.js must implement lightweight pointer specular glare tracker');
+  console.log('✓ macOS Finder Liquid Glass Optical Materials Suite verified');
 
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {

@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "electron": "electron .",
     "server": "node server.js",
     "test": "node test/self-check.js",
     "build": "npx electron-builder --win nsis portable",
