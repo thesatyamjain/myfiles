@@ -1787,6 +1787,15 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   for (const mod of requiredModules) {
     assert(buildFiles.includes(mod) || buildFiles.includes('*.js'), `package.json build.files must include ${mod} to prevent runtime missing module errors in packaged app`);
   }
+
+  // Verify SemVer release normalization and sync-version script
+  const { normalizeToSemver } = require('../scripts/sync-version');
+  assert.strictEqual(normalizeToSemver('v1.1.0.3', '1.1.1'), '1.1.3', '4-part v1.1.0.3 must map to valid SemVer 1.1.3');
+  assert.strictEqual(normalizeToSemver('1.1.0.3', '1.1.1'), '1.1.3', '4-part 1.1.0.3 must map to valid SemVer 1.1.3');
+  assert.strictEqual(normalizeToSemver('v1.1.0.1', '1.1.1'), '1.1.1', 'v1.1.0.1 must map to 1.1.1');
+  assert.strictEqual(normalizeToSemver('v1.1.1', '1.1.1'), '1.1.1', 'Standard v1.1.1 must remain 1.1.1');
+  assert.strictEqual(normalizeToSemver('v1.2.0', '1.1.1'), '1.2.0', 'v1.2.0 must remain 1.2.0');
+
   console.log('✓ Packaging Build Configuration & ASAR Module Integrity Suite verified');
 
   // 54. Default Windows File Manager Registry Integration Suite
