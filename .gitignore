@@ -8,7 +8,6 @@ package-lock.json
 dist/
 out/
 release/
-build/
 
 # App user data (persisted locally, not for source control)
 .myfiles/
