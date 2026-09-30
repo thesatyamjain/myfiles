@@ -41,6 +41,7 @@
             <!-- Specular Highlight Top Edge -->
             <path d="M 6.8 11.2 L 31.2 11.2" stroke="rgba(255, 255, 255, 0.65)" stroke-width="0.85" stroke-linecap="round"/>
           </svg>
+          <span class="badge-beta">BETA</span>
         </div>
 
         <!-- Tab Strip -->
@@ -673,6 +674,7 @@
           <span class="gear-pill-badge" id="gearPillBadge" title="Current Gear">G2</span>
         </div>
         <span class="status-mode" id="statusViewMode">Columns</span>
+        <span class="badge-beta" title="MyFiles Beta Preview" style="font-size: 8.5px; padding: 1px 4.5px; margin-left: 6px;">BETA</span>
       </div>
     </footer>
 
@@ -1120,7 +1122,10 @@
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </div>
             <div>
-              <div class="settings-header-title">Preferences & Settings</div>
+              <div class="settings-header-title" style="display: flex; align-items: center; gap: 8px;">
+                <span>Preferences & Settings</span>
+                <span class="badge-beta">BETA</span>
+              </div>
               <div class="settings-header-sub">Configure layout, browsing behavior, media preview, and Windows integration</div>
             </div>
           </div>
@@ -2035,7 +2040,7 @@
               <div class="settings-row">
                 <div class="settings-row-text">
                   <div class="settings-row-label">Software Updates</div>
-                  <div class="settings-row-desc" id="settingsUpdateStatusText">Installed version: v1.1.0 · Over-the-air updates via GitHub Releases</div>
+                  <div class="settings-row-desc" id="settingsUpdateStatusText">Installed version: v1.1.1 (Beta Channel) · Over-the-air updates via GitHub Releases</div>
                 </div>
                 <div class="settings-row-ctrl" style="gap: 8px;">
                   <button class="tool-btn" id="btnCheckForUpdates" style="padding: 5px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
@@ -2054,7 +2059,7 @@
         <!-- Footer -->
         <div class="settings-footer">
           <div class="settings-footer-meta">
-            <span>MyFiles Desktop v1.1.0</span>
+            <span>MyFiles Desktop v1.1.1 <span class="badge-beta" style="font-size: 8px; padding: 1px 4.5px; margin-left: 4px;">BETA</span></span>
             <span class="settings-footer-sep">·</span>
             <span>Built by <a href="https://thesoftwareco.pages.dev" target="_blank" rel="noopener noreferrer" class="settings-credit-link" title="Visit The Software Co.">The Software Co.</a></span>
           </div>

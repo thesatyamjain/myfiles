@@ -489,9 +489,9 @@ body.is-maximized .statusbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
+  gap: 6px;
   height: 28px;
-  padding: 0;
+  padding: 0 4px;
   border-radius: var(--radius-sm);
   border-right: none;
   flex-shrink: 0;
@@ -499,6 +499,28 @@ body.is-maximized .statusbar {
   cursor: default;
   -webkit-app-region: no-drag;
   transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.badge-beta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fb923c;
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  padding: 1px 5px;
+  border-radius: 4px;
+  line-height: 1.2;
+  user-select: none;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.15);
+  transition: all 0.2s ease;
+  pointer-events: none;
 }
 
 .app-badge:hover {
