@@ -2552,13 +2552,21 @@ body.theme-light .list-container .view-group-header {
   box-shadow: none;
 }
 .grid-item.selected {
-  background: var(--accent-glow);
-  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.04));
+  background: color-mix(in srgb, var(--accent) 15%, rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+}
+.grid-item.selected:hover {
+  background: color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.06));
   border-color: var(--accent);
-  box-shadow: 0 0 0 1.5px var(--accent), 0 6px 18px -4px rgba(0, 0, 0, 0.5), 0 0 16px var(--accent-glow);
 }
 body.theme-light .grid-item.selected {
-  background: color-mix(in srgb, var(--accent) 13%, rgba(0, 0, 0, 0.02));
+  background: color-mix(in srgb, var(--accent) 12%, rgba(0, 0, 0, 0.02));
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+}
+body.theme-light .grid-item.selected:hover {
+  background: color-mix(in srgb, var(--accent) 16%, rgba(0, 0, 0, 0.04));
 }
 
 .grid-item.item-cut,
@@ -2754,10 +2762,13 @@ body.theme-light .grid-item.selected {
 }
 
 .grid-item.selected .grid-name-pill {
-  background: var(--accent);
-  color: #ffffff;
+  background: transparent;
+  color: var(--text-main);
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  box-shadow: none;
+}
+.grid-item.selected .grid-sub {
+  color: var(--text-muted);
 }
 
 .tag-dot.inline {
@@ -4415,9 +4426,9 @@ body.theme-light .modal-card {
   transform: translateY(-1px);
 }
 .scrubber-item.selected {
-  background: var(--accent-glow);
-  border-color: var(--accent);
-  box-shadow: 0 0 14px var(--accent-glow);
+  background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
   transform: translateY(-2px);
 }
 
