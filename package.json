@@ -22,7 +22,7 @@
     "miller-columns",
     "tags"
   ],
-  "author": "Antigravity",
+  "author": "The Software Co.",
   "license": "MIT",
   "devDependencies": {
     "electron": "44.4.5"
@@ -30,6 +30,7 @@
   "build": {
     "appId": "com.andruia.myfiles",
     "productName": "MyFiles",
+    "copyright": "Copyright © 2026 The Software Co.",
     "publish": {
       "provider": "github",
       "owner": "thesatyamjain",
@@ -54,6 +55,9 @@
     ],
     "win": {
       "icon": "assets/icon.ico",
+      "publisherName": [
+        "The Software Co."
+      ],
       "target": [
         {
           "target": "nsis",
