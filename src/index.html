@@ -601,22 +601,65 @@
         </div>
 
         <!-- Secondary Pane (Split View) -->
-        <div class="pane-divider" id="paneDivider" style="display: none;"></div>
+        <div class="pane-divider" id="paneDivider" style="display: none;" title="Drag to resize / Double-click to reset 50/50">
+          <div class="pane-divider-handle" id="paneDividerHandle"></div>
+        </div>
         <div class="file-pane secondary-pane" id="secondaryPane" data-pane-id="secondary" style="display: none;">
-          <div class="secondary-pane-header">
+          <div class="secondary-pane-header" id="secondaryPaneHeader">
             <div class="secondary-pane-nav">
+              <button class="tool-btn icon-only" id="btnSecondaryBack" title="Back (Alt+Left)" disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="tool-btn icon-only" id="btnSecondaryForward" title="Forward (Alt+Right)" disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
               <button class="tool-btn icon-only" id="btnSecondaryUp" title="Up to Parent Directory (Alt+Up)">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
               </button>
-              <button class="tool-btn icon-only" id="btnSecondarySwap" title="Swap Left and Right Panes">
+              <button class="tool-btn icon-only" id="btnSecondarySwap" title="Swap Left and Right Panes (Alt+S)">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+              </button>
+              <button class="tool-btn icon-only" id="btnSecondarySync" title="Sync / Match Path with Other Pane">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               </button>
               <div class="secondary-pane-drives" id="secondaryPaneDrives"></div>
             </div>
-            <span class="secondary-pane-title" id="secondaryPanePath">D:\</span>
+
+            <!-- Interactive Breadcrumbs for Secondary Pane -->
+            <div class="secondary-breadcrumbs-wrapper">
+              <div class="secondary-breadcrumbs-trail" id="secondaryBreadcrumbsTrail">
+                <span class="secondary-pane-title" id="secondaryPanePath">D:\</span>
+              </div>
+            </div>
+
+            <!-- Secondary View Mode Switcher -->
+            <div class="secondary-view-switcher" id="secondaryViewSwitcher">
+              <button class="tool-btn icon-only sec-view-btn" id="btnSecViewGrid" data-view="grid" title="Grid View">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+              </button>
+              <button class="tool-btn icon-only sec-view-btn" id="btnSecViewList" data-view="list" title="Details List View">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
+              </button>
+              <button class="tool-btn icon-only sec-view-btn active" id="btnSecViewColumns" data-view="columns" title="Column View">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="18" rx="1"/><rect x="17" y="3" width="5" height="18" rx="1"/></svg>
+              </button>
+            </div>
+
+            <!-- Inter-pane Transfer Actions, Orientation & Close -->
             <div class="secondary-pane-actions">
+              <button class="tool-btn sec-action-btn" id="btnCopyOpposite" title="Copy Selected Items to Other Pane (F5)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>Copy</span>
+              </button>
+              <button class="tool-btn sec-action-btn" id="btnMoveOpposite" title="Move Selected Items to Other Pane (F6)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                <span>Move</span>
+              </button>
+              <button class="tool-btn icon-only" id="btnSplitOrientation" title="Toggle Split Orientation: Side-by-Side / Stacked">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+              </button>
               <span class="secondary-pane-count" id="secondaryPaneCount">0 items</span>
-              <button class="btn-close-secondary" id="btnCloseSecondary" title="Close Split Pane">
+              <button class="btn-close-secondary" id="btnCloseSecondary" title="Close Split Pane (Ctrl+Shift+D)">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>

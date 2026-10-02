@@ -1886,7 +1886,38 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(latestStyles.includes('.ql-loading-spinner'), 'styles.css must define .ql-loading-spinner');
   assert(latestRenderer.includes('pp-hero-text-preview is-loading'), 'renderer.js must mark text preview hero with is-loading while fetching content');
   assert(latestStyles.includes('.pp-hero-text-preview.is-loading'), 'styles.css must center .pp-hero-text-preview.is-loading');
-  console.log('✓ Preview Loading Centering & Liquid Glass Indicator Suite verified');
+  // 62. Symmetric Dual Workspace Architecture & Split View Parity Suite
+  const splitIndexHtml = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
+  assert(splitIndexHtml.includes('id="btnSecondaryBack"'), 'index.html must include btnSecondaryBack');
+  assert(splitIndexHtml.includes('id="btnSecondaryForward"'), 'index.html must include btnSecondaryForward');
+  assert(splitIndexHtml.includes('id="btnSecondarySync"'), 'index.html must include btnSecondarySync');
+  assert(splitIndexHtml.includes('id="secondaryBreadcrumbsTrail"'), 'index.html must include secondaryBreadcrumbsTrail');
+  assert(splitIndexHtml.includes('id="btnSecViewGrid"'), 'index.html must include btnSecViewGrid');
+  assert(splitIndexHtml.includes('id="btnSecViewList"'), 'index.html must include btnSecViewList');
+  assert(splitIndexHtml.includes('id="btnSecViewColumns"'), 'index.html must include btnSecViewColumns');
+  assert(splitIndexHtml.includes('id="btnSplitOrientation"'), 'index.html must include btnSplitOrientation');
+  assert(splitIndexHtml.includes('id="btnCopyOpposite"'), 'index.html must include btnCopyOpposite');
+  assert(splitIndexHtml.includes('id="btnMoveOpposite"'), 'index.html must include btnMoveOpposite');
+  assert(splitIndexHtml.includes('id="paneDividerHandle"'), 'index.html must include paneDividerHandle');
+
+  assert(latestStyles.includes('.panes-container.split-vertical'), 'styles.css must include .panes-container.split-vertical');
+  assert(latestStyles.includes('.pane-divider-handle'), 'styles.css must include .pane-divider-handle');
+  assert(latestStyles.includes('.secondary-view-switcher'), 'styles.css must include .secondary-view-switcher');
+  assert(latestStyles.includes('.sec-action-btn'), 'styles.css must include .sec-action-btn');
+  assert(latestStyles.includes('.file-pane.active-pane'), 'styles.css must style .active-pane elevation');
+
+  assert(latestRenderer.includes('function setActivePane('), 'renderer.js must implement setActivePane');
+  assert(latestRenderer.includes('function toggleActivePane('), 'renderer.js must implement toggleActivePane');
+  assert(latestRenderer.includes('function secondaryGoBack('), 'renderer.js must implement secondaryGoBack');
+  assert(latestRenderer.includes('function secondaryGoForward('), 'renderer.js must implement secondaryGoForward');
+  assert(latestRenderer.includes('function renderSecondaryBreadcrumbs('), 'renderer.js must implement renderSecondaryBreadcrumbs');
+  assert(latestRenderer.includes('function setSecondaryViewMode('), 'renderer.js must implement setSecondaryViewMode');
+  assert(latestRenderer.includes('function toggleSplitOrientation('), 'renderer.js must implement toggleSplitOrientation');
+  assert(latestRenderer.includes('function copyToOppositePane('), 'renderer.js must implement copyToOppositePane');
+  assert(latestRenderer.includes('function moveToOppositePane('), 'renderer.js must implement moveToOppositePane');
+  assert(latestRenderer.includes("e.key === 'Tab' && state.dualPaneActive"), 'renderer.js must handle Tab keypane cycling');
+  assert(latestRenderer.includes("e.key.toLowerCase() === 's' && state.dualPaneActive"), 'renderer.js must handle Alt+S pane swapping');
+  console.log('✓ Symmetric Dual Workspace Architecture & Split View Parity Suite verified');
 
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {

@@ -124,10 +124,14 @@
     tabs: [],
     activeTabId: null,
     dualPaneActive: false,
+    dualPaneOrientation: 'horizontal', // 'horizontal' | 'vertical'
     activePane: 'primary', // 'primary' | 'secondary'
     secondaryPath: null,
+    secondaryViewMode: 'list', // 'list' | 'grid' | 'columns'
     secondaryItems: [],
     secondarySelected: null,
+    secondaryHistory: [],
+    secondaryHistoryIdx: -1,
     
     // VLC Media Integration State
     vlcInstalled: false,
@@ -750,6 +754,17 @@
     secondaryPanePath: document.getElementById('secondaryPanePath'),
     btnSecondaryUp: document.getElementById('btnSecondaryUp'),
     btnSecondarySwap: document.getElementById('btnSecondarySwap'),
+    btnSecondaryBack: document.getElementById('btnSecondaryBack'),
+    btnSecondaryForward: document.getElementById('btnSecondaryForward'),
+    btnSecondarySync: document.getElementById('btnSecondarySync'),
+    secondaryBreadcrumbsTrail: document.getElementById('secondaryBreadcrumbsTrail'),
+    btnSecViewGrid: document.getElementById('btnSecViewGrid'),
+    btnSecViewList: document.getElementById('btnSecViewList'),
+    btnSecViewColumns: document.getElementById('btnSecViewColumns'),
+    btnCopyOpposite: document.getElementById('btnCopyOpposite'),
+    btnMoveOpposite: document.getElementById('btnMoveOpposite'),
+    btnSplitOrientation: document.getElementById('btnSplitOrientation'),
+    paneDividerHandle: document.getElementById('paneDividerHandle'),
     secondaryPaneDrives: document.getElementById('secondaryPaneDrives'),
     secondaryPaneCount: document.getElementById('secondaryPaneCount'),
 
@@ -6148,16 +6163,45 @@
     updateStatusBar();
   }
 
-  // --- DUAL-PANE (SPLIT VIEW) ---
+  // --- SYMMETRIC DUAL WORKSPACE (SPLIT VIEW) ---
+  function setActivePane(pane) {
+    if (!state.dualPaneActive) {
+      state.activePane = 'primary';
+      return;
+    }
+    state.activePane = pane === 'secondary' ? 'secondary' : 'primary';
+    if (el.primaryPane && el.secondaryPane) {
+      if (state.activePane === 'primary') {
+        el.primaryPane.classList.add('active-pane');
+        el.primaryPane.classList.remove('inactive-pane');
+        el.secondaryPane.classList.remove('active-pane');
+        el.secondaryPane.classList.add('inactive-pane');
+      } else {
+        el.secondaryPane.classList.add('active-pane');
+        el.secondaryPane.classList.remove('inactive-pane');
+        el.primaryPane.classList.remove('active-pane');
+        el.primaryPane.classList.add('inactive-pane');
+      }
+    }
+    updateStatusBar();
+  }
+
+  function toggleActivePane() {
+    if (!state.dualPaneActive) return;
+    setActivePane(state.activePane === 'primary' ? 'secondary' : 'primary');
+  }
+
   function toggleDualPane() {
     state.dualPaneActive = !state.dualPaneActive;
     if (el.btnToggleDualPane) el.btnToggleDualPane.classList.toggle('active', state.dualPaneActive);
 
     if (state.dualPaneActive) {
+      if (el.panesContainer) el.panesContainer.classList.add('dual-active');
       el.secondaryPane.style.display = 'flex';
-      el.paneDivider.style.display = 'block';
+      el.paneDivider.style.display = 'flex';
       if (el.splitPaneLabel) el.splitPaneLabel.textContent = 'Split Active';
-      
+      setActivePane('primary');
+
       // Default secondary pane to D: or another drive or user directory
       let secPath = state.drives.length > 1 ? state.drives[1].path : state.currentPath;
       if (secPath === state.currentPath && state.drives.length > 0) {
@@ -6165,11 +6209,23 @@
       }
       loadSecondaryPane(secPath);
     } else {
+      if (el.panesContainer) {
+        el.panesContainer.classList.remove('dual-active');
+        el.panesContainer.classList.remove('split-vertical');
+      }
+      state.dualPaneOrientation = 'horizontal';
       el.secondaryPane.style.display = 'none';
       el.paneDivider.style.display = 'none';
+      if (el.primaryPane) {
+        el.primaryPane.classList.remove('active-pane', 'inactive-pane');
+        el.primaryPane.style.flex = '1';
+      }
+      if (el.secondaryPane) {
+        el.secondaryPane.classList.remove('active-pane', 'inactive-pane');
+        el.secondaryPane.style.flex = '1';
+      }
       if (el.splitPaneLabel) el.splitPaneLabel.textContent = 'Dual Pane';
-      el.primaryPane.style.flex = '1';
-      el.secondaryPane.style.flex = '1';
+      state.activePane = 'primary';
     }
   }
 
@@ -6183,7 +6239,11 @@
       btn.className = 'secondary-drive-btn' + (drive.letter + ':' === currentDriveLetter ? ' active' : '');
       btn.textContent = drive.letter + ':';
       btn.title = `Switch to ${drive.label}`;
-      btn.addEventListener('click', () => loadSecondaryPane(drive.path));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setActivePane('secondary');
+        loadSecondaryPane(drive.path);
+      });
       btn.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -6191,6 +6251,78 @@
       });
       el.secondaryPaneDrives.appendChild(btn);
     });
+  }
+
+  function renderSecondaryBreadcrumbs(dirPath) {
+    if (!el.secondaryBreadcrumbsTrail) return;
+    el.secondaryBreadcrumbsTrail.innerHTML = '';
+    const norm = (dirPath || '').replace(/\//g, '\\');
+    
+    let segments = [];
+    if (/^[a-zA-Z]:/.test(norm)) {
+      const drive = norm.substring(0, 2).toUpperCase() + '\\';
+      const rest = norm.substring(2).replace(/^\\+/, '').split('\\').filter(Boolean);
+      segments = [
+        { name: drive, path: drive },
+        ...rest.map((part, idx) => ({
+          name: part,
+          path: drive + rest.slice(0, idx + 1).join('\\')
+        }))
+      ];
+    } else {
+      const parts = norm.split('\\').filter(Boolean);
+      segments = parts.map((part, idx) => ({
+        name: part,
+        path: parts.slice(0, idx + 1).join('\\')
+      }));
+    }
+
+    segments.forEach((seg, idx) => {
+      if (idx > 0) {
+        const sep = document.createElement('span');
+        sep.className = 'sec-crumb-separator';
+        sep.innerHTML = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 10px; height: 10px;"><polyline points="9 18 15 12 9 6"/></svg>`;
+        el.secondaryBreadcrumbsTrail.appendChild(sep);
+      }
+      const crumb = document.createElement('span');
+      crumb.className = 'sec-crumb-segment' + (idx === segments.length - 1 ? ' active' : '');
+      crumb.textContent = seg.name;
+      crumb.title = seg.path;
+      crumb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setActivePane('secondary');
+        loadSecondaryPane(seg.path);
+      });
+      el.secondaryBreadcrumbsTrail.appendChild(crumb);
+    });
+  }
+
+  function updateSecondaryNavButtons() {
+    if (el.btnSecondaryBack) {
+      el.btnSecondaryBack.disabled = state.secondaryHistoryIdx <= 0;
+    }
+    if (el.btnSecondaryForward) {
+      el.btnSecondaryForward.disabled = state.secondaryHistoryIdx >= state.secondaryHistory.length - 1;
+    }
+    if (el.btnSecondaryUp) {
+      const secParent = getParentPath(state.secondaryPath);
+      el.btnSecondaryUp.disabled = !secParent;
+      el.btnSecondaryUp.title = secParent ? `Up to ${secParent} (Alt+Up)` : 'Already at root folder (Alt+Up)';
+    }
+  }
+
+  function secondaryGoBack() {
+    if (state.secondaryHistoryIdx > 0) {
+      state.secondaryHistoryIdx--;
+      loadSecondaryPane(state.secondaryHistory[state.secondaryHistoryIdx], false);
+    }
+  }
+
+  function secondaryGoForward() {
+    if (state.secondaryHistoryIdx < state.secondaryHistory.length - 1) {
+      state.secondaryHistoryIdx++;
+      loadSecondaryPane(state.secondaryHistory[state.secondaryHistoryIdx], false);
+    }
   }
 
   function secondaryGoUp() {
@@ -6205,21 +6337,63 @@
 
   function swapPanes() {
     if (!state.dualPaneActive || !state.secondaryPath) return;
-    const temp = state.currentPath;
-    navigateTo(state.secondaryPath, false);
-    loadSecondaryPane(temp);
+    const tempCurrent = state.currentPath;
+    const tempSec = state.secondaryPath;
+    navigateTo(tempSec, false);
+    loadSecondaryPane(tempCurrent);
+    showToast('Swapped Left and Right workspace panes', 'info');
   }
 
-  async function loadSecondaryPane(dirPath) {
+  function syncPanes() {
+    if (!state.dualPaneActive) return;
+    if (state.activePane === 'primary' && state.currentPath) {
+      loadSecondaryPane(state.currentPath);
+      showToast('Synced right pane with current path', 'info');
+    } else if (state.activePane === 'secondary' && state.secondaryPath) {
+      navigateTo(state.secondaryPath, false);
+      showToast('Synced left pane with right pane path', 'info');
+    }
+  }
+
+  function toggleSplitOrientation() {
+    if (!state.dualPaneActive) return;
+    state.dualPaneOrientation = state.dualPaneOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+    if (el.panesContainer) {
+      el.panesContainer.classList.toggle('split-vertical', state.dualPaneOrientation === 'vertical');
+    }
+    el.primaryPane.style.flex = '1';
+    el.secondaryPane.style.flex = '1';
+    showToast(`Split orientation: ${state.dualPaneOrientation === 'vertical' ? 'Stacked (Vertical)' : 'Side-by-Side (Horizontal)'}`, 'info');
+  }
+
+  function setSecondaryViewMode(mode) {
+    if (!mode) return;
+    state.secondaryViewMode = mode;
+    [el.btnSecViewGrid, el.btnSecViewList, el.btnSecViewColumns].forEach(btn => {
+      if (btn) btn.classList.toggle('active', btn.dataset.view === mode);
+    });
+    renderSecondaryPane();
+  }
+
+  async function loadSecondaryPane(dirPath, pushHistory = true) {
     let resolved = (dirPath || '').trim();
     if (/^[a-zA-Z]:$/.test(resolved)) resolved += '\\';
+    
+    if (pushHistory) {
+      if (state.secondaryPath && state.secondaryPath !== resolved) {
+        state.secondaryHistory = state.secondaryHistory.slice(0, state.secondaryHistoryIdx + 1);
+        state.secondaryHistory.push(resolved);
+        state.secondaryHistoryIdx = state.secondaryHistory.length - 1;
+      } else if (state.secondaryHistory.length === 0) {
+        state.secondaryHistory = [resolved];
+        state.secondaryHistoryIdx = 0;
+      }
+    }
+
     state.secondaryPath = resolved;
     if (el.secondaryPanePath) el.secondaryPanePath.textContent = resolved;
-    if (el.btnSecondaryUp) {
-      const secParent = getParentPath(resolved);
-      el.btnSecondaryUp.disabled = !secParent;
-      el.btnSecondaryUp.title = secParent ? `Up to ${secParent} (Alt+Up)` : 'Already at root folder (Alt+Up)';
-    }
+    renderSecondaryBreadcrumbs(resolved);
+    updateSecondaryNavButtons();
     renderSecondaryDrives();
 
     const res = await api.readDir(resolved);
@@ -6235,47 +6409,195 @@
   }
 
   function renderSecondaryPane() {
+    if (!el.secondaryViewport) return;
     el.secondaryViewport.innerHTML = '';
-    const container = document.createElement('div');
-    container.className = 'list-container';
+    const mode = state.secondaryViewMode || 'list';
 
-    state.secondaryItems.forEach((item) => {
-      const row = document.createElement('div');
-      row.className = 'list-row';
-      row.draggable = true;
-      row.innerHTML = `
-        <div class="list-cell list-cell-name">
-          <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+    if (mode === 'grid') {
+      const container = document.createElement('div');
+      container.className = 'grid-container';
+      container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(110px, 1fr))';
+      container.style.gap = '12px';
+      container.style.padding = '12px';
+
+      state.secondaryItems.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'grid-item' + (state.secondarySelected === item ? ' selected' : '');
+        card.draggable = true;
+        card.innerHTML = `
+          <div class="grid-thumb-box" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;">
             ${getFileIcon(item, false)}
           </div>
-          <span>${item.name}</span>
-        </div>
-        <div class="list-cell list-col-size right">${item.isDirectory ? '--' : formatBytes(item.size)}</div>
+          <div class="grid-item-name" style="font-size: 11px; text-align: center; word-break: break-all; line-height: 1.2;">${escapeHtml(item.name)}</div>
+          <div class="grid-item-meta" style="font-size: 10px; color: var(--text-dim); text-align: center; margin-top: 2px;">${item.isDirectory ? 'Folder' : formatBytes(item.size)}</div>
+        `;
+
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', item.path);
+          e.dataTransfer.effectAllowed = 'copy';
+        });
+
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePane('secondary');
+          container.querySelectorAll('.grid-item').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.secondarySelected = item;
+        });
+
+        card.addEventListener('dblclick', () => {
+          if (item.isDirectory) {
+            loadSecondaryPane(item.path);
+          } else {
+            api.openItem(item.path);
+          }
+        });
+
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setActivePane('secondary');
+          state.secondarySelected = item;
+          showContextMenu(e.clientX, e.clientY, item);
+        });
+
+        container.appendChild(card);
+      });
+
+      el.secondaryViewport.appendChild(container);
+    } else {
+      // Default: Clean Details List
+      const container = document.createElement('div');
+      container.className = 'list-container';
+
+      // Header row
+      const headerRow = document.createElement('div');
+      headerRow.className = 'list-header-row';
+      headerRow.style.cssText = 'display: flex; align-items: center; height: 26px; padding: 0 12px; font-size: 11px; font-weight: 600; color: var(--text-dim); border-bottom: 1px solid var(--border-subtle); background: var(--bg-surface-elevated);';
+      headerRow.innerHTML = `
+        <div style="flex: 1; min-width: 0;">Name</div>
+        <div style="width: 80px; text-align: right;">Size</div>
+        <div style="width: 130px; text-align: right; padding-right: 8px;">Date Modified</div>
       `;
+      container.appendChild(headerRow);
 
-      row.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', item.path);
-        e.dataTransfer.effectAllowed = 'copy';
+      state.secondaryItems.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'list-row' + (state.secondarySelected === item ? ' selected' : '');
+        row.draggable = true;
+        row.innerHTML = `
+          <div class="list-cell list-cell-name" style="flex: 1; min-width: 0;">
+            <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ${getFileIcon(item, false)}
+            </div>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.name)}</span>
+          </div>
+          <div class="list-cell list-col-size right" style="width: 80px; text-align: right; font-size: 11px; color: var(--text-dim);">${item.isDirectory ? '--' : formatBytes(item.size)}</div>
+          <div class="list-cell list-col-date right" style="width: 130px; text-align: right; font-size: 11px; color: var(--text-dim); padding-right: 8px;">${item.mtime ? formatDate(item.mtime) : '--'}</div>
+        `;
+
+        row.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', item.path);
+          e.dataTransfer.effectAllowed = 'copy';
+        });
+
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePane('secondary');
+          container.querySelectorAll('.list-row').forEach(r => r.classList.remove('selected'));
+          row.classList.add('selected');
+          state.secondarySelected = item;
+        });
+
+        row.addEventListener('dblclick', () => {
+          if (item.isDirectory) {
+            loadSecondaryPane(item.path);
+          } else {
+            api.openItem(item.path);
+          }
+        });
+
+        row.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setActivePane('secondary');
+          state.secondarySelected = item;
+          showContextMenu(e.clientX, e.clientY, item);
+        });
+
+        container.appendChild(row);
       });
 
-      row.addEventListener('click', () => {
-        container.querySelectorAll('.list-row').forEach(r => r.classList.remove('selected'));
-        row.classList.add('selected');
-        state.secondarySelected = item;
-      });
+      el.secondaryViewport.appendChild(container);
+    }
+  }
 
-      row.addEventListener('dblclick', () => {
-        if (item.isDirectory) {
-          loadSecondaryPane(item.path);
-        } else {
-          api.openItem(item.path);
-        }
-      });
+  async function copyToOppositePane() {
+    if (!state.dualPaneActive) return;
+    let srcPaths = [];
+    let targetDir = '';
 
-      container.appendChild(row);
-    });
+    if (state.activePane === 'primary') {
+      const selected = typeof getSelectedItems === 'function' ? getSelectedItems() : [];
+      if (selected.length === 0 && state.selectedItem) selected.push(state.selectedItem);
+      srcPaths = selected.map(i => i.path);
+      targetDir = state.secondaryPath;
+    } else {
+      if (state.secondarySelected) srcPaths = [state.secondarySelected.path];
+      targetDir = state.currentPath;
+    }
 
-    el.secondaryViewport.appendChild(container);
+    if (srcPaths.length === 0 || !targetDir) {
+      showToast('Select an item to copy to the other pane', 'info');
+      return;
+    }
+
+    const res = await api.copyItems(srcPaths, targetDir);
+    if (res && res.success) {
+      const destBase = targetDir.replace(/[/\\]+$/, '').split(/[/\\]/).pop() || targetDir;
+      showToast(`Copied ${srcPaths.length} item(s) to "${destBase}"`, 'success');
+      loadSecondaryPane(state.secondaryPath, false);
+      if (state.activePane !== 'primary') {
+        navigateTo(state.currentPath, false);
+      }
+    } else {
+      showToast(`Copy failed: ${res ? res.error : 'Unknown error'}`, 'error');
+    }
+  }
+
+  async function moveToOppositePane() {
+    if (!state.dualPaneActive) return;
+    let srcPaths = [];
+    let targetDir = '';
+
+    if (state.activePane === 'primary') {
+      const selected = typeof getSelectedItems === 'function' ? getSelectedItems() : [];
+      if (selected.length === 0 && state.selectedItem) selected.push(state.selectedItem);
+      srcPaths = selected.map(i => i.path);
+      targetDir = state.secondaryPath;
+    } else {
+      if (state.secondarySelected) srcPaths = [state.secondarySelected.path];
+      targetDir = state.currentPath;
+    }
+
+    if (srcPaths.length === 0 || !targetDir) {
+      showToast('Select an item to move to the other pane', 'info');
+      return;
+    }
+
+    const res = await api.moveItems(srcPaths, targetDir);
+    if (res && res.success) {
+      const destBase = targetDir.replace(/[/\\]+$/, '').split(/[/\\]/).pop() || targetDir;
+      showToast(`Moved ${srcPaths.length} item(s) to "${destBase}"`, 'success');
+      loadSecondaryPane(state.secondaryPath, false);
+      if (state.activePane === 'primary') {
+        navigateTo(state.currentPath, false);
+      } else {
+        renderCurrentView();
+      }
+    } else {
+      showToast(`Move failed: ${res ? res.error : 'Unknown error'}`, 'error');
+    }
   }
 
   function showDriveContextMenu(x, y, drive) {
@@ -10179,6 +10501,30 @@
     if (el.btnCloseSecondary) el.btnCloseSecondary.addEventListener('click', toggleDualPane);
     if (el.btnSecondaryUp) el.btnSecondaryUp.addEventListener('click', secondaryGoUp);
     if (el.btnSecondarySwap) el.btnSecondarySwap.addEventListener('click', swapPanes);
+    if (el.btnSecondaryBack) el.btnSecondaryBack.addEventListener('click', secondaryGoBack);
+    if (el.btnSecondaryForward) el.btnSecondaryForward.addEventListener('click', secondaryGoForward);
+    if (el.btnSecondarySync) el.btnSecondarySync.addEventListener('click', syncPanes);
+    if (el.btnSplitOrientation) el.btnSplitOrientation.addEventListener('click', toggleSplitOrientation);
+    if (el.btnCopyOpposite) el.btnCopyOpposite.addEventListener('click', copyToOppositePane);
+    if (el.btnMoveOpposite) el.btnMoveOpposite.addEventListener('click', moveToOppositePane);
+    if (el.btnSecViewGrid) el.btnSecViewGrid.addEventListener('click', () => setSecondaryViewMode('grid'));
+    if (el.btnSecViewList) el.btnSecViewList.addEventListener('click', () => setSecondaryViewMode('list'));
+    if (el.btnSecViewColumns) el.btnSecViewColumns.addEventListener('click', () => setSecondaryViewMode('columns'));
+
+    if (el.primaryPane) {
+      el.primaryPane.addEventListener('mousedown', () => {
+        if (state.dualPaneActive && state.activePane !== 'primary') {
+          setActivePane('primary');
+        }
+      });
+    }
+    if (el.secondaryPane) {
+      el.secondaryPane.addEventListener('mousedown', () => {
+        if (state.dualPaneActive && state.activePane !== 'secondary') {
+          setActivePane('secondary');
+        }
+      });
+    }
 
     // New File Menu Dropdown
     el.btnNewFileMenu.addEventListener('click', (e) => {
@@ -10581,21 +10927,41 @@
     // Dual Pane Split Divider Resizer
     if (el.paneDivider && el.panesContainer && el.primaryPane && el.secondaryPane) {
       let isResizingPane = false;
-      el.paneDivider.addEventListener('mousedown', () => {
+      el.paneDivider.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
         isResizingPane = true;
         el.paneDivider.classList.add('resizing');
-        document.body.style.cursor = 'col-resize';
+        document.body.style.cursor = state.dualPaneOrientation === 'vertical' ? 'row-resize' : 'col-resize';
         document.body.style.userSelect = 'none';
       });
+
+      // Double-click to reset 50/50 balance
+      el.paneDivider.addEventListener('dblclick', () => {
+        if (!state.dualPaneActive) return;
+        el.primaryPane.style.flex = '1';
+        el.secondaryPane.style.flex = '1';
+        showToast('Split view centered (50/50)', 'info');
+      });
+
       window.addEventListener('mousemove', (e) => {
         if (!isResizingPane || !state.dualPaneActive) return;
         const rect = el.panesContainer.getBoundingClientRect();
-        const relativeX = e.clientX - rect.left;
-        const minW = 200;
-        const maxW = rect.width - minW;
-        if (relativeX >= minW && relativeX <= maxW) {
-          el.primaryPane.style.flex = `0 0 ${relativeX}px`;
-          el.secondaryPane.style.flex = `1 1 auto`;
+        if (state.dualPaneOrientation === 'vertical') {
+          const relativeY = e.clientY - rect.top;
+          const minH = 150;
+          const maxH = rect.height - minH;
+          if (relativeY >= minH && relativeY <= maxH) {
+            el.primaryPane.style.flex = `0 0 ${relativeY}px`;
+            el.secondaryPane.style.flex = `1 1 auto`;
+          }
+        } else {
+          const relativeX = e.clientX - rect.left;
+          const minW = 200;
+          const maxW = rect.width - minW;
+          if (relativeX >= minW && relativeX <= maxW) {
+            el.primaryPane.style.flex = `0 0 ${relativeX}px`;
+            el.secondaryPane.style.flex = `1 1 auto`;
+          }
         }
       });
       window.addEventListener('mouseup', () => {
@@ -12535,6 +12901,13 @@
       // Ignore shortcut if typing in input or textarea
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+      // Dual Pane Pane Focus Switcher (Tab)
+      if (e.key === 'Tab' && state.dualPaneActive && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        toggleActivePane();
+        return;
+      }
+
       // Show View Options Toggle (Ctrl+J) - macOS Reference
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
@@ -12814,10 +13187,32 @@
         return;
       }
 
-      // Refresh (F5 or Ctrl+R)
-      if (e.key === 'F5' || (e.ctrlKey && e.key.toLowerCase() === 'r')) {
+      // Dual Pane Inter-pane Copy (F5) / Global Refresh
+      if (e.key === 'F5' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        if (state.dualPaneActive) {
+          const hasSelection = (state.activePane === 'secondary'
+            ? (state.secondarySelectedIndices && state.secondarySelectedIndices.size > 0)
+            : (state.selectedIndices && state.selectedIndices.size > 0 || !!state.activeItem));
+          if (hasSelection) {
+            e.preventDefault();
+            copyToOppositePane();
+            return;
+          }
+        }
         e.preventDefault();
         navigateTo(state.currentPath, false);
+        return;
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        navigateTo(state.currentPath, false);
+        return;
+      }
+
+      // Dual Pane Inter-pane Move (F6)
+      if (state.dualPaneActive && e.key === 'F6' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        moveToOppositePane();
         return;
       }
 
@@ -12976,6 +13371,14 @@
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         toggleDualPane();
+        return;
+      }
+
+      // Dual Pane Swap Panes (Alt+S)
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 's' && state.dualPaneActive) {
+        e.preventDefault();
+        swapPanes();
+        return;
       }
 
       // Search (Ctrl+F)
