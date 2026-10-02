@@ -2159,30 +2159,43 @@
   }
 
   // --- DRAG & DROP CORE SUBSYSTEM ---
+  // Global protection: prevent default Chromium file navigation on unhandled window drops
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  }, false);
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+  }, false);
+
   function parseDroppedPaths(dataTransfer) {
     if (!dataTransfer) return [];
-    // 1. Files dropped from external Desktop / Explorer
-    if (dataTransfer.files && dataTransfer.files.length > 0) {
-      const files = Array.from(dataTransfer.files);
-      const paths = files.map(f => {
+    try {
+      // 1. Files dropped from external Desktop / Explorer
+      if (dataTransfer.files && dataTransfer.files.length > 0) {
+        const files = Array.from(dataTransfer.files);
+        const paths = files.map(f => {
+          try {
+            if (api.getPathForFile) return api.getPathForFile(f);
+          } catch {}
+          return f.path || '';
+        }).filter(Boolean);
+        if (paths.length > 0) return paths;
+      }
+      // 2. Internal drag and drop (JSON array or single string)
+      const text = (dataTransfer.getData && dataTransfer.getData('text/plain')) || '';
+      if (!text) return [];
+      const trimmed = text.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
         try {
-          if (api.getPathForFile) return api.getPathForFile(f);
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed.filter(Boolean);
         } catch {}
-        return f.path || '';
-      }).filter(Boolean);
-      if (paths.length > 0) return paths;
+      }
+      return [trimmed].filter(Boolean);
+    } catch (err) {
+      console.error('[MyFiles] parseDroppedPaths error:', err);
+      return [];
     }
-    // 2. Internal drag and drop (JSON array or single string)
-    const text = dataTransfer.getData('text/plain') || '';
-    if (!text) return [];
-    const trimmed = text.trim();
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) return parsed.filter(Boolean);
-      } catch {}
-    }
-    return [trimmed].filter(Boolean);
   }
 
   async function handleDroppedItems(e, targetDir, defaultAction = 'move') {
@@ -2190,60 +2203,65 @@
     e.stopPropagation();
     if (!targetDir) return false;
 
-    const paths = parseDroppedPaths(e.dataTransfer);
-    if (paths && paths.length > 0) {
-      const normTarget = targetDir.replace(/[\\/]+$/, '').toLowerCase();
-      // Filter out invalid drops (dropping directory into itself or dropping item onto its own parent)
-      const validPaths = paths.filter(p => {
-        if (!p) return false;
-        const normP = p.replace(/[\\/]+$/, '').toLowerCase();
-        // Cannot drop into itself
-        if (normP === normTarget) return false;
-        // Cannot drop directory into a subpath of itself
-        if (normTarget.startsWith(normP + '\\') || normTarget.startsWith(normP + '/')) return false;
-        // If moving into same parent directory, it is a no-op
-        const parentP = normP.replace(/[\\/][^\\/]+$/, '');
-        if (!e.ctrlKey && defaultAction === 'move' && parentP === normTarget) return false;
+    try {
+      const paths = parseDroppedPaths(e.dataTransfer);
+      if (paths && paths.length > 0) {
+        const normTarget = targetDir.replace(/[\\/]+$/, '').toLowerCase();
+        // Filter out invalid drops (dropping directory into itself or dropping item onto its own parent)
+        const validPaths = paths.filter(p => {
+          if (!p) return false;
+          const normP = p.replace(/[\\/]+$/, '').toLowerCase();
+          // Cannot drop into itself
+          if (normP === normTarget) return false;
+          // Cannot drop directory into a subpath of itself
+          if (normTarget.startsWith(normP + '\\') || normTarget.startsWith(normP + '/')) return false;
+          // If moving into same parent directory, it is a no-op
+          const parentP = normP.replace(/[\\/][^\\/]+$/, '');
+          if (!e.ctrlKey && defaultAction === 'move' && parentP === normTarget) return false;
+          return true;
+        });
+
+        if (validPaths.length === 0) return false;
+
+        const isCopy = e.ctrlKey || defaultAction === 'copy';
+        if (isCopy) {
+          await api.copyItems(validPaths, targetDir);
+          showToast(`Copied ${validPaths.length} item${validPaths.length > 1 ? 's' : ''}`, 'success');
+        } else {
+          await api.moveItems(validPaths, targetDir);
+          showToast(`Moved ${validPaths.length} item${validPaths.length > 1 ? 's' : ''}`, 'success');
+        }
         return true;
-      });
-
-      if (validPaths.length === 0) return false;
-
-      const isCopy = e.ctrlKey || defaultAction === 'copy';
-      if (isCopy) {
-        await api.copyItems(validPaths, targetDir);
-        showToast(`Copied ${validPaths.length} item${validPaths.length > 1 ? 's' : ''}`, 'success');
-      } else {
-        await api.moveItems(validPaths, targetDir);
-        showToast(`Moved ${validPaths.length} item${validPaths.length > 1 ? 's' : ''}`, 'success');
       }
-      return true;
-    }
 
-    // Web fallback for files without OS paths
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const files = Array.from(e.dataTransfer.files);
-      let imported = 0;
-      for (const f of files) {
-        try {
-          const reader = new FileReader();
-          await new Promise(res => {
-            reader.onload = async () => {
-              const b64 = (reader.result || '').split(',')[1] || '';
-              await api.createFile(targetDir, f.name, b64, 'base64');
-              imported++;
-              res();
-            };
-            reader.readAsDataURL(f);
-          });
-        } catch (err) {
-          console.error(err);
+      // Web fallback for files without OS paths
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const files = Array.from(e.dataTransfer.files);
+        let imported = 0;
+        for (const f of files) {
+          try {
+            const reader = new FileReader();
+            await new Promise(res => {
+              reader.onload = async () => {
+                const b64 = (reader.result || '').split(',')[1] || '';
+                await api.createFile(targetDir, f.name, b64, 'base64');
+                imported++;
+                res();
+              };
+              reader.readAsDataURL(f);
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        if (imported > 0) {
+          showToast(`Imported ${imported} file${imported > 1 ? 's' : ''}`, 'success');
+          return true;
         }
       }
-      if (imported > 0) {
-        showToast(`Imported ${imported} file${imported > 1 ? 's' : ''}`, 'success');
-        return true;
-      }
+    } catch (err) {
+      console.error('[MyFiles] handleDroppedItems error:', err);
+      showToast(`Operation failed: ${err.message || 'Drop error'}`, 'error');
     }
     return false;
   }
@@ -2252,47 +2270,55 @@
     if (!elTarget || !item) return;
     elTarget.draggable = true;
     elTarget.addEventListener('dragstart', (e) => {
-      let dragItems = [item];
-      const mainIdx = state.items.findIndex(it => it.path === item.path);
-      if (mainIdx !== -1 && state.selectedIndices.has(mainIdx) && state.selectedIndices.size > 1) {
-        dragItems = Array.from(state.selectedIndices).map(i => state.items[i]).filter(Boolean);
-      }
-      const paths = dragItems.map(it => it.path);
-
-      // 1. Text payload (single path for 1 item, or JSON array for multi-select)
-      const textData = paths.length === 1 ? paths[0] : JSON.stringify(paths);
-      e.dataTransfer.setData('text/plain', textData);
-
-      // 2. URI-list payload for external browsers, code editors and terminals
-      const uriList = paths.map(p => 'file:///' + p.replace(/\\/g, '/')).join('\r\n');
       try {
-        e.dataTransfer.setData('text/uri-list', uriList);
-      } catch {}
-
-      // 3. DownloadURL for Chromium drag-out
-      try {
-        if (paths.length === 1 && !item.isDirectory) {
-          const fileUrl = 'file:///' + item.path.replace(/\\/g, '/');
-          e.dataTransfer.setData('DownloadURL', `application/octet-stream:${item.name}:${fileUrl}`);
+        let dragItems = [item];
+        const mainIdx = state.items.findIndex(it => it.path === item.path);
+        if (mainIdx !== -1 && state.selectedIndices.has(mainIdx) && state.selectedIndices.size > 1) {
+          dragItems = Array.from(state.selectedIndices).map(i => state.items[i]).filter(Boolean);
         }
-      } catch {}
+        const paths = dragItems.map(it => it.path);
 
-      e.dataTransfer.effectAllowed = 'copyMove';
+        // 1. Text payload (single path for 1 item, or JSON array for multi-select)
+        const textData = paths.length === 1 ? paths[0] : JSON.stringify(paths);
+        e.dataTransfer.setData('text/plain', textData);
 
-      // 4. Native OS drag session via Electron IPC to drag into external apps (Photoshop, Desktop, Chrome, Explorer)
-      if (window.myFilesAPI && typeof window.myFilesAPI.startDrag === 'function') {
-        window.myFilesAPI.startDrag(paths);
+        // 2. URI-list payload for external browsers, code editors and terminals
+        const uriList = paths.map(p => 'file:///' + p.replace(/\\/g, '/')).join('\r\n');
+        try {
+          e.dataTransfer.setData('text/uri-list', uriList);
+        } catch {}
+
+        // 3. DownloadURL for Chromium drag-out
+        try {
+          if (paths.length === 1 && !item.isDirectory) {
+            const fileUrl = 'file:///' + item.path.replace(/\\/g, '/');
+            e.dataTransfer.setData('DownloadURL', `application/octet-stream:${item.name}:${fileUrl}`);
+          }
+        } catch {}
+
+        e.dataTransfer.effectAllowed = 'copyMove';
+
+        // 4. Native OS drag session via Electron IPC to drag into external apps (Photoshop, Desktop, Chrome, Explorer)
+        // Running HTML5 drag and native OLE startDrag concurrently without preventDefault crashes Chromium.
+        // If external drag is explicitly requested (Alt key held), prevent default and invoke startDrag.
+        if (e.altKey && window.myFilesAPI && typeof window.myFilesAPI.startDrag === 'function') {
+          e.preventDefault();
+          window.myFilesAPI.startDrag(paths);
+          return;
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'drag-ghost-badge';
+        badge.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+          <span>${dragItems.length > 1 ? `${dragItems.length} items` : item.name}</span>
+        `;
+        document.body.appendChild(badge);
+        e.dataTransfer.setDragImage(badge, 20, 20);
+        setTimeout(() => badge.remove(), 0);
+      } catch (err) {
+        console.error('[MyFiles] dragstart error:', err);
       }
-
-      const badge = document.createElement('div');
-      badge.className = 'drag-ghost-badge';
-      badge.innerHTML = `
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
-        <span>${dragItems.length > 1 ? `${dragItems.length} items` : item.name}</span>
-      `;
-      document.body.appendChild(badge);
-      e.dataTransfer.setDragImage(badge, 20, 20);
-      setTimeout(() => badge.remove(), 0);
     });
   }
 
@@ -2327,6 +2353,8 @@
     });
 
     elFolder.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       if (springTimer) {
         clearTimeout(springTimer);
         springTimer = null;
@@ -2335,9 +2363,13 @@
       elFolder.classList.remove('folder-spring-hover');
       const targetPath = getPath();
       if (!targetPath) return;
-      const didDrop = await handleDroppedItems(e, targetPath, 'move');
-      if (didDrop && typeof onDropSuccess === 'function') {
-        onDropSuccess();
+      try {
+        const didDrop = await handleDroppedItems(e, targetPath, 'move');
+        if (didDrop && typeof onDropSuccess === 'function') {
+          onDropSuccess();
+        }
+      } catch (err) {
+        console.error('[MyFiles] Folder drop failed:', err);
       }
     });
   }
@@ -3455,8 +3487,10 @@
         }
       });
       colEl.addEventListener('drop', async (e) => {
-        if (e.target.closest('.column-item')) return;
+        e.preventDefault();
+        e.stopPropagation();
         colEl.classList.remove('drop-target');
+        if (e.target.closest('.column-item')) return;
         const didDrop = await handleDroppedItems(e, col.path, 'copy');
         if (didDrop) {
           const res = await api.readDir(col.path);
@@ -10987,6 +11021,8 @@
         }
       });
       el.secondaryViewport.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         el.secondaryViewport.classList.remove('drop-target');
         if (e.target.closest('.list-row') || e.target.closest('.grid-item') || e.target.closest('.column-item')) {
           return;
@@ -11019,6 +11055,8 @@
         }
       });
       el.primaryViewport.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         el.primaryViewport.classList.remove('drop-target');
         if (e.target.closest('.list-row') || e.target.closest('.grid-item') || e.target.closest('.column-item')) {
           return;

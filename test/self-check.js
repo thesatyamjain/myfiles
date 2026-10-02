@@ -1117,6 +1117,10 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(currentMain.includes("ipcMain.on('start-drag'"), 'main.js must listen for start-drag IPC');
   assert(currentPreload.includes("startDrag:"), 'preload.js must expose startDrag API');
   assert(currentMain.includes("EXDEV"), 'main.js move-items must handle EXDEV cross-device links');
+  assert(currentMain.includes("will-navigate"), 'main.js must guard against dropped file navigation');
+  assert(!currentMain.includes("blankIcon"), 'main.js must not use 1x1 blankIcon which crashes Windows shell32');
+  assert(currentRenderer.includes("window.addEventListener('drop'"), 'renderer.js must have global window drop protection');
+  assert(currentRenderer.includes("window.addEventListener('dragover'"), 'renderer.js must have global window dragover protection');
 
   console.log('✓ Unified Drag & Drop Architecture, Multi-Payload Parser & Cross-Device Move verified');
 

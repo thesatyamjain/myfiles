@@ -55,9 +55,6 @@
     ],
     "win": {
       "icon": "assets/icon.ico",
-      "publisherName": [
-        "The Software Co."
-      ],
       "target": [
         {
           "target": "nsis",

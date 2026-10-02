@@ -371,6 +371,17 @@ function createWindow(initialTarget = null) {
     console.error('Failed to load application:', err);
   });
 
+  win.webContents.on('will-navigate', (event, navigationUrl) => {
+    try {
+      const parsed = new URL(navigationUrl);
+      if (!navigationUrl.includes('index.html') && parsed.protocol === 'file:') {
+        event.preventDefault();
+      }
+    } catch {
+      event.preventDefault();
+    }
+  });
+
   win.webContents.on('render-process-gone', (_event, details) => {
     console.error('[MyFiles] Render process gone:', details);
   });
@@ -711,13 +722,26 @@ ipcMain.handle('move-items', async (_event, srcPaths, targetDir) => {
 // IPC: Native drag outward to Desktop / Explorer / Other Applications
 ipcMain.on('start-drag', (event, targetPaths) => {
   try {
+    if (!event.sender || event.sender.isDestroyed()) return;
     const paths = (Array.isArray(targetPaths) ? targetPaths : [targetPaths]).filter(p => typeof p === 'string' && fs.existsSync(p));
     if (paths.length === 0) return;
-    const blankIcon = nativeImage.createFromBuffer(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64'));
+
+    const iconPath = path.join(__dirname, 'assets', 'icon.png');
+    let dragIcon = null;
+    if (fs.existsSync(iconPath)) {
+      try {
+        dragIcon = nativeImage.createFromPath(iconPath);
+      } catch (err) {
+        console.error('Failed to create nativeImage from iconPath:', err);
+      }
+    }
+    if (!dragIcon || dragIcon.isEmpty()) return;
+    const cleanIcon = dragIcon.resize({ width: 32, height: 32 });
+
     event.sender.startDrag({
       file: paths[0],
       files: paths,
-      icon: blankIcon
+      icon: cleanIcon
     });
   } catch (err) {
     console.error('start-drag error:', err);
