@@ -238,12 +238,12 @@ body.theme-light {
 
 @media (prefers-color-scheme: dark) {
   body.theme-system {
-    --bg-app: #000000;
-    --bg-sidebar: #050507;
-    --bg-surface: #0a0b0e;
-    --bg-surface-elevated: #121318;
-    --bg-surface-hover: #191b22;
-    --bg-surface-active: #222530;
+    --bg-app: #08090d;
+    --bg-sidebar: #0d0f17;
+    --bg-surface: #12141e;
+    --bg-surface-elevated: #1a1d2b;
+    --bg-surface-hover: #222638;
+    --bg-surface-active: #2a3047;
     
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-medium: rgba(255, 255, 255, 0.16);

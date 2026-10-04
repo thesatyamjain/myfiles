@@ -41,7 +41,7 @@ if (process.platform === 'win32') {
 
 // Hardware & GPU rendering acceleration flags for zero-latency UI
 app.commandLine.appendSwitch('enable-gpu-rasterization');
-app.commandLine.appendSwitch('enable-zero-copy');
+
 
 const appIconPath = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 let appNativeIcon = null;
@@ -303,7 +303,7 @@ function createWindow(initialTarget = null) {
     show: false,
     frame: false,
     backgroundMaterial: isWin11OrLater ? 'acrylic' : undefined,
-    backgroundColor: isWin11OrLater ? '#00000000' : '#0f172a',
+    backgroundColor: '#08090d',
     icon: (appNativeIcon && !appNativeIcon.isEmpty()) ? appNativeIcon : (fs.existsSync(appIconPath) ? appIconPath : undefined),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -327,7 +327,7 @@ function createWindow(initialTarget = null) {
       win.show();
       win.focus();
     }
-  }, 600);
+  }, 1200);
 
   if (appNativeIcon && !appNativeIcon.isEmpty()) {
     try { win.setIcon(appNativeIcon); } catch {}
