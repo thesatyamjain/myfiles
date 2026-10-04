@@ -1,6 +1,6 @@
 {
   "name": "myfiles",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "MyFiles - Fast, keyboard-first Windows File Manager with Quick Look, Miller Columns, and Colored Tags",
   "main": "main.js",
   "scripts": {
