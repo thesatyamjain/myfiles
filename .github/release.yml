@@ -1,0 +1,36 @@
+changelog:
+  categories:
+    - title: '🚀 Features & Enhancements'
+      labels:
+        - 'feat'
+        - 'feature'
+        - 'enhancement'
+    - title: '🐛 Bug Fixes'
+      labels:
+        - 'fix'
+        - 'bug'
+        - 'bugfix'
+    - title: '🎨 UI & Design Polish'
+      labels:
+        - 'ui'
+        - 'design'
+        - 'style'
+    - title: '⚡ Performance & Hardening'
+      labels:
+        - 'perf'
+        - 'performance'
+        - 'security'
+    - title: '🛠 Build, CI & Maintenance'
+      labels:
+        - 'ci'
+        - 'build'
+        - 'chore'
+        - 'refactor'
+        - 'docs'
+  exclude:
+    labels:
+      - 'ignore-for-release'
+      - 'no-release'
+    authors:
+      - 'dependabot[bot]'
+      - 'github-actions[bot]'

@@ -12,6 +12,7 @@ A fast, keyboard-first Windows file manager built with Node.js and Electron. Com
   <a href="#3-dual-pane-workspace--tab-management"><strong>Dual Pane</strong></a> •
   <a href="#configuration--settings"><strong>Obsidian Settings</strong></a> •
   <a href="https://thesatyamjain.github.io/myfiles/"><strong>Website</strong></a> •
+  <a href="CHANGELOG.md"><strong>Changelog</strong></a> •
   <a href="https://github.com/thesatyamjain/myfiles/releases/latest"><strong>Download v1.1.1</strong></a>
 </p>
 
@@ -43,6 +44,7 @@ A fast, keyboard-first Windows file manager built with Node.js and Electron. Com
 - [Building & Releases](#building--releases)
 - [Developer Guide & Automated Verification](#developer-guide--automated-verification)
 - [Frequently Asked Questions](#frequently-asked-questions)
+- [Changelog](CHANGELOG.md)
 - [License](#license)
 
 ---
