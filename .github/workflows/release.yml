@@ -2,9 +2,24 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Auto-bump version before release (patch, minor, major)'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -16,11 +31,60 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Auto-bump version (if requested via workflow_dispatch)
+        if: github.event.inputs.bump != 'none' && github.event.inputs.bump != ''
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          $bump = "${{ github.event.inputs.bump }}"
+          npm version $bump --no-git-tag-version
+          $pkg = Get-Content package.json | ConvertFrom-Json
+          git commit -am "chore(release): bump version to $($pkg.version) [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync package.json version with Git tag
+        id: version_step
+        run: node scripts/sync-version.js
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+
+      - name: Auto-create and push Git Tag if missing
+        id: auto_tag
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version_step.outputs.tag_name }}"
+          if (-not $tag) {
+            $pkg = Get-Content package.json | ConvertFrom-Json
+            $tag = "v$($pkg.version)"
+          }
+          Write-Host "Target Git tag: $tag"
+          
+          git fetch --tags
+          $existingTag = git tag -l $tag
+          if (-not $existingTag) {
+            Write-Host "Tag $tag not found on remote. Creating and pushing tag automatically..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a $tag -m "Release $tag"
+            git push origin $tag
+            Write-Host "Tag $tag created and pushed to GitHub successfully!"
+          } else {
+            Write-Host "Tag $tag already exists on GitHub. Continuing with release build."
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
         run: npm install
@@ -30,13 +94,6 @@ jobs:
 
       - name: Clean previous builds
         run: if (Test-Path dist) { Remove-Item -Recurse -Force dist }
-
-      - name: Sync package.json version with Git tag
-        id: version_step
-        run: node scripts/sync-version.js
-        env:
-          REF_NAME: ${{ github.ref_name }}
-          REF_TYPE: ${{ github.ref_type }}
 
       - name: Build Windows Installer & Portable Executable
         run: npx electron-builder --win nsis portable --publish never
