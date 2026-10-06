@@ -1923,6 +1923,33 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(latestRenderer.includes("e.key.toLowerCase() === 's' && state.dualPaneActive"), 'renderer.js must handle Alt+S pane swapping');
   console.log('✓ Symmetric Dual Workspace Architecture & Split View Parity Suite verified');
 
+  // 62. Spotlight Search Bar Fluid Expansion & Non-Clipping Viewport Suite
+  assert(latestStyles.includes('.search-wrapper:focus-within'), 'styles.css must implement .search-wrapper:focus-within expansion');
+  assert(latestStyles.includes('.search-wrapper.has-query'), 'styles.css must implement .search-wrapper.has-query persistent expansion');
+  assert(latestStyles.includes('.search-box input') && latestStyles.includes('min-width: 60px'), 'styles.css must enforce min-width: 60px on search input to prevent clipping');
+  assert(latestStyles.includes('.toolbar:has(.search-wrapper:focus-within)'), 'styles.css must yield address bar space when search is focused');
+  assert(latestRenderer.includes("searchWrapper: document.querySelector('.search-wrapper')"), 'renderer.js must cache searchWrapper element');
+  assert(latestRenderer.includes("el.searchWrapper.classList.toggle('has-query', !!query)"), 'renderer.js must toggle has-query on searchWrapper');
+  console.log('✓ Spotlight Search Bar Fluid Expansion & Non-Clipping Viewport Suite verified');
+
+  // 63. Window Revisit Selection Stability & Zero Blink Diffing Suite
+  assert(latestRenderer.includes("Restore selection target BEFORE rendering so DOM elements render selected from frame 0"), 'renderer.js must resolve and populate selection before rendering view');
+  assert(latestRenderer.includes("state.selectedIndices.add(targetSelectIdx)"), 'renderer.js must pre-populate selectedIndices to eliminate unselected-to-selected blink');
+  assert(latestRenderer.includes("window.addEventListener('focus', async () =>"), 'renderer.js must handle focus with async check');
+  assert(latestRenderer.includes("newItems[i].name !== oldItems[i].name ||"), 'renderer.js must perform shallow diff before triggering navigateTo on window focus');
+  console.log('✓ Window Revisit Selection Stability & Zero Blink Diffing Suite verified');
+
+  // 64. High-Performance Core Engine Optimization Suite
+  const latestMain = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  const latestFsEngine = fs.readFileSync(path.join(__dirname, '..', 'fs-engine.js'), 'utf8');
+  assert(latestMain.includes('getCachedTags()'), 'main.js must cache tags in memory');
+  assert(latestMain.includes('getCachedPins()'), 'main.js must cache pins in memory');
+  assert(latestFsEngine.includes('inFlightDrivesPromise'), 'fs-engine.js must deduplicate in-flight drive scans');
+  assert(latestFsEngine.includes('inFlightDirReads'), 'fs-engine.js must deduplicate in-flight directory reads');
+  assert(latestRenderer.includes('Promise.all(['), 'renderer.js must load initial data concurrently');
+  assert(latestRenderer.includes('fGrad_drop_shadow'), 'renderer.js must use shared static SVG filter IDs');
+  console.log('✓ High-Performance Core Engine Optimization Suite verified');
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);

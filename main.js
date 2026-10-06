@@ -187,6 +187,9 @@ if (!fs.existsSync(configDir)) {
 const tagsFile = path.join(configDir, 'tags.json');
 const pinsFile = path.join(configDir, 'pins.json');
 
+let memoryTagsCache = null;
+let memoryPinsCache = null;
+
 function loadJson(filePath, defaultValue) {
   try {
     if (fs.existsSync(filePath)) {
@@ -206,6 +209,20 @@ function saveJson(filePath, data) {
     console.error(`Error saving ${filePath}:`, err);
     return false;
   }
+}
+
+function getCachedTags() {
+  if (memoryTagsCache === null) {
+    memoryTagsCache = loadJson(tagsFile, {});
+  }
+  return memoryTagsCache;
+}
+
+function getCachedPins() {
+  if (memoryPinsCache === null) {
+    memoryPinsCache = loadJson(pinsFile, []);
+  }
+  return memoryPinsCache;
 }
 
 function extractPathArg(argv) {
@@ -355,7 +372,7 @@ function createWindow(initialTarget = null) {
       mainWindow = windows.size > 0 ? Array.from(windows)[0] : null;
     }
     if (windows.size === 0 && process.platform !== 'darwin') {
-      app.exit(0);
+      app.quit();
     }
   });
 
@@ -495,7 +512,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.exit(0);
+    app.quit();
   }
 });
 
@@ -1211,32 +1228,33 @@ ipcMain.handle('cancel-search', (_event, searchId) => {
   return { success: true };
 });
 
-// IPC: Tags Management (Persistent)
+// IPC: Tags Management (Persistent, In-Memory Cached)
 ipcMain.handle('get-tags', () => {
-  return loadJson(tagsFile, {});
+  return getCachedTags();
 });
 
 ipcMain.handle('set-tag', (_event, filePath, tag) => {
-  const tags = loadJson(tagsFile, {});
+  const tags = getCachedTags();
   tags[filePath] = tag;
   saveJson(tagsFile, tags);
   return tags;
 });
 
 ipcMain.handle('remove-tag', (_event, filePath) => {
-  const tags = loadJson(tagsFile, {});
+  const tags = getCachedTags();
   delete tags[filePath];
   saveJson(tagsFile, tags);
   return tags;
 });
 
-// IPC: Pins Management (User controlled sidebar)
+// IPC: Pins Management (User controlled sidebar, In-Memory Cached)
 ipcMain.handle('get-pins', () => {
-  return loadJson(pinsFile, []);
+  return getCachedPins();
 });
 
 ipcMain.handle('save-pins', (_event, pins) => {
-  return saveJson(pinsFile, pins);
+  memoryPinsCache = Array.isArray(pins) ? pins : [];
+  return saveJson(pinsFile, memoryPinsCache);
 });
 
 // IPC: Archive Operations (7-Zip & Native Windows Integration)

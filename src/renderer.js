@@ -450,7 +450,8 @@
       backStart = '#475569'; backEnd = '#1e293b'; frontStart = '#94a3b8'; frontEnd = '#475569';
     }
 
-    const gradId = 'fGrad_' + Math.random().toString(36).substring(2, 7);
+    const tagKey = tag || 'default';
+    const gradId = 'fGrad_' + tagKey;
 
     return `
       <svg class="file-svg-icon folder-svg" viewBox="0 0 38 32" fill="none">
@@ -463,7 +464,7 @@
             <stop offset="0%" stop-color="${frontStart}"/>
             <stop offset="100%" stop-color="${frontEnd}"/>
           </linearGradient>
-          <filter id="${gradId}_s" x="-15%" y="-15%" width="130%" height="135%">
+          <filter id="fGrad_drop_shadow" x="-15%" y="-15%" width="130%" height="135%">
             <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.22"/>
           </filter>
         </defs>
@@ -474,7 +475,7 @@
         <line x1="10" y1="11" x2="20" y2="11" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
         <line x1="10" y1="14" x2="16" y2="14" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
         <!-- Front Flap with depth shadow -->
-        <path d="M 3.5 13.5 C 3.5 11.8 4.8 10.5 6.8 10.5 L 31.2 10.5 C 33.2 10.5 34.5 11.8 34.5 13.5 L 34.5 25.5 C 34.5 27.8 32.8 29.5 30.5 29.5 L 7.5 29.5 C 5.2 29.5 3.5 27.8 3.5 25.5 Z" fill="url(#${gradId}_f)" filter="url(#${gradId}_s)"/>
+        <path d="M 3.5 13.5 C 3.5 11.8 4.8 10.5 6.8 10.5 L 31.2 10.5 C 33.2 10.5 34.5 11.8 34.5 13.5 L 34.5 25.5 C 34.5 27.8 32.8 29.5 30.5 29.5 L 7.5 29.5 C 5.2 29.5 3.5 27.8 3.5 25.5 Z" fill="url(#${gradId}_f)" filter="url(#fGrad_drop_shadow)"/>
         <!-- Specular Highlight Top Edge -->
         <path d="M 6.8 11.2 L 31.2 11.2" stroke="rgba(255, 255, 255, 0.65)" stroke-width="0.85" stroke-linecap="round"/>
         ${badge}
@@ -483,17 +484,16 @@
   }
 
   function getZipSvg() {
-    const gradId = 'zipG_' + Math.random().toString(36).substring(2, 7);
     return `
       <svg class="file-svg-icon" viewBox="0 0 32 38" fill="none">
         <defs>
-          <linearGradient id="${gradId}_b" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="zipG_shared_b" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="var(--doc-card-bg, #1e293b)"/>
             <stop offset="100%" stop-color="var(--doc-card-bg, #0f172a)"/>
           </linearGradient>
         </defs>
         <!-- Base sheet with folded dog-ear -->
-        <path d="M5 5a3 3 0 0 1 3-3h12.5l7 7v23a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5z" fill="url(#${gradId}_b)" stroke="var(--doc-card-stroke, #334155)" stroke-width="1.1"/>
+        <path d="M5 5a3 3 0 0 1 3-3h12.5l7 7v23a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5z" fill="url(#zipG_shared_b)" stroke="var(--doc-card-stroke, #334155)" stroke-width="1.1"/>
         <path d="M20.5 2v5.5a1.5 1.5 0 0 0 1.5 1.5h5.5z" fill="currentColor" fill-opacity="0.16" stroke="var(--doc-card-stroke, #334155)" stroke-width="0.9"/>
         <!-- Zipper teeth track down center -->
         <line x1="16" y1="5" x2="16" y2="24" stroke="var(--doc-card-stroke, #475569)" stroke-width="2"/>
@@ -509,17 +509,16 @@
   }
 
   function getDocSvg(badgeText, color) {
-    const gradId = 'docG_' + Math.random().toString(36).substring(2, 7);
     return `
       <svg class="file-svg-icon" viewBox="0 0 32 38" fill="none">
         <defs>
-          <linearGradient id="${gradId}_b" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="docG_shared_b" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="var(--doc-card-bg, #1e293b)"/>
             <stop offset="100%" stop-color="var(--doc-card-bg, #0f172a)"/>
           </linearGradient>
         </defs>
         <!-- Base sheet with folded dog-ear corner -->
-        <path d="M5 5a3 3 0 0 1 3-3h12.5l7 7v23a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5z" fill="url(#${gradId}_b)" stroke="var(--doc-card-stroke, #334155)" stroke-width="1.1"/>
+        <path d="M5 5a3 3 0 0 1 3-3h12.5l7 7v23a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5z" fill="url(#docG_shared_b)" stroke="var(--doc-card-stroke, #334155)" stroke-width="1.1"/>
         <!-- Folded Corner Flap -->
         <path d="M20.5 2v5.5a1.5 1.5 0 0 0 1.5 1.5h5.5z" fill="currentColor" fill-opacity="0.16" stroke="var(--doc-card-stroke, #334155)" stroke-width="0.9"/>
         <!-- Content Preview Lines -->
@@ -808,6 +807,7 @@
     previewPaneBody: document.getElementById('previewPaneBody'),
 
     // Search
+    searchWrapper: document.querySelector('.search-wrapper'),
     searchInput: document.getElementById('searchInput'),
     btnSearchClear: document.getElementById('btnSearchClear'),
     btnSearchTypeToggle: document.getElementById('btnSearchTypeToggle'),
@@ -1412,23 +1412,27 @@
 
   async function loadInitialData() {
     try {
-      state.drives = await api.getDrives();
-      state.pins = await api.getPins();
-      state.tags = await api.getTags();
-      if (api.getVlcStatus) {
-        try {
-          const vlcInfo = await api.getVlcStatus();
-          state.vlcInstalled = !!(vlcInfo && vlcInfo.installed);
-          state.vlcPath = vlcInfo ? vlcInfo.path : null;
-        } catch {}
+      const [drives, pins, tags, vlcInfo, specialFolders] = await Promise.all([
+        Promise.resolve(api.getDrives ? api.getDrives() : []).catch(() => []),
+        Promise.resolve(api.getPins ? api.getPins() : []).catch(() => []),
+        Promise.resolve(api.getTags ? api.getTags() : {}).catch(() => ({})),
+        api.getVlcStatus ? Promise.resolve(api.getVlcStatus()).catch(() => null) : Promise.resolve(null),
+        api.getSpecialFolders ? Promise.resolve(api.getSpecialFolders()).catch(() => []) : Promise.resolve([])
+      ]);
+
+      state.drives = drives || [];
+      state.pins = pins || [];
+      state.tags = tags || {};
+      if (vlcInfo) {
+        state.vlcInstalled = !!vlcInfo.installed;
+        state.vlcPath = vlcInfo.path || null;
       }
-      if (api.getSpecialFolders) {
-        try {
-          state.specialFolders = await api.getSpecialFolders();
-          const homeDef = state.specialFolders.find(f => f.id === 'home');
-          if (homeDef) state.homePath = homeDef.path;
-        } catch {}
+      if (specialFolders && specialFolders.length > 0) {
+        state.specialFolders = specialFolders;
+        const homeDef = state.specialFolders.find(f => f.id === 'home');
+        if (homeDef) state.homePath = homeDef.path;
       }
+
       renderSidebarDrives();
       renderSidebarPins();
       initSidebarFavorites();
@@ -1735,8 +1739,6 @@
 
     state.currentPath = res.currentPath;
     state.rawItems = res.items || [];
-    state.selectedIndices.clear();
-    state.activeItem = null;
     state.isSearching = false;
 
     const isRecycle = (state.currentPath === 'Recycle Bin' || state.currentPath === 'recycle-bin');
@@ -1779,17 +1781,7 @@
     updateNavButtons();
     renderTabs();
 
-    // Setup Miller Columns if active
-    if (state.viewMode === 'columns') {
-      await setupMillerColumns(res.currentPath);
-    } else {
-      renderCurrentView();
-    }
-
-    updateStatusBar();
-    highlightSidebarActive();
-
-    // Restore scroll position and re-select exited folder or previous item
+    // Restore selection target BEFORE rendering so DOM elements render selected from frame 0 (zero blink)
     const cachedScroll = state.historyScrollMap.get(res.currentPath);
     let targetSelectIdx = -1;
 
@@ -1803,10 +1795,30 @@
       state.lastExitedFolder = null;
     } else if (cachedScroll && cachedScroll.activePath) {
       targetSelectIdx = state.items.findIndex(it => it.path === cachedScroll.activePath);
+    } else if (state.activeItem && state.activeItem.path) {
+      targetSelectIdx = state.items.findIndex(it => it.path === state.activeItem.path);
     }
 
+    state.selectedIndices.clear();
     if (targetSelectIdx !== -1) {
-      selectItemByIndex(targetSelectIdx);
+      state.selectedIndices.add(targetSelectIdx);
+      state.activeItem = state.items[targetSelectIdx];
+    } else {
+      state.activeItem = null;
+    }
+
+    // Setup Miller Columns if active or render standard view
+    if (state.viewMode === 'columns') {
+      await setupMillerColumns(res.currentPath);
+    } else {
+      renderCurrentView();
+    }
+
+    updateStatusBar();
+    highlightSidebarActive();
+
+    if (targetSelectIdx !== -1) {
+      renderPreviewPane();
     }
 
     if (el.primaryViewport) {
@@ -7574,6 +7586,9 @@
   function handleSearchInput(query) {
     state.filterQuery = query || '';
     el.btnSearchClear.style.display = query ? 'flex' : 'none';
+    if (el.searchWrapper) {
+      el.searchWrapper.classList.toggle('has-query', !!query);
+    }
 
     const trimmed = (query || '').trim();
     if (trimmed && el.searchPopover) {
@@ -11174,6 +11189,7 @@
     el.btnSearchClear.addEventListener('click', () => {
       el.searchInput.value = '';
       handleSearchInput('');
+      el.searchInput.focus();
     });
     // Search Attribute Dropdown (macOS Reference 3)
     if (el.btnSearchTypeToggle && el.searchAttrDropdown) {
@@ -11965,10 +11981,31 @@
       });
     }
 
-    // Window focus auto-refresh
-    window.addEventListener('focus', () => {
+    // Window focus auto-refresh (smart diff check to eliminate unnecessary re-renders)
+    window.addEventListener('focus', async () => {
       if (state.autoRefreshOnFocus && state.currentPath && !state.isSearching) {
-        navigateTo(state.currentPath, false);
+        try {
+          const res = await api.readDir(state.currentPath);
+          if (!res || !res.success) return;
+          const newItems = res.items || [];
+          const oldItems = state.rawItems || [];
+          let changed = newItems.length !== oldItems.length;
+          if (!changed) {
+            for (let i = 0; i < newItems.length; i++) {
+              if (newItems[i].name !== oldItems[i].name || 
+                  newItems[i].size !== oldItems[i].size || 
+                  newItems[i].mtime !== oldItems[i].mtime) {
+                changed = true;
+                break;
+              }
+            }
+          }
+          if (changed) {
+            await navigateTo(state.currentPath, false);
+          }
+        } catch (e) {
+          console.warn('Focus auto-refresh check failed:', e);
+        }
       }
     });
 

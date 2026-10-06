@@ -108,79 +108,95 @@ if (process.platform === 'win32') {
 let cachedDrivesResult = null;
 let lastDrivesCacheTime = 0;
 const DRIVES_CACHE_TTL_MS = 4000;
+let inFlightDrivesPromise = null;
 
-/**
- * Detect all mounted logical drives with storage metrics
- */
-async function getDrives(forceRefresh = false) {
-  const now = Date.now();
-  if (!forceRefresh && cachedDrivesResult && (now - lastDrivesCacheTime < DRIVES_CACHE_TTL_MS)) {
-    return cachedDrivesResult;
-  }
-
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  const drives = [];
-
+async function _scanDrivesInternal() {
   if (process.platform === 'win32') {
     refreshWindowsDrivesInfo();
   }
 
-  for (const letter of letters) {
+  // Prioritize known mounted letters from winDriveCache, fallback to standard drives
+  const candidateLetters = (winDriveCache.size > 0)
+    ? Array.from(new Set(['C', ...winDriveCache.keys()]))
+    : 'CDEFGHIJKLMNOPQRSTUVWXYZAB'.split('');
+
+  const drivePromises = candidateLetters.map(async (letter) => {
     const rootPath = `${letter}:\\`;
     try {
-      if (fs.existsSync(rootPath)) {
-        let freeBytes = 0;
-        let totalBytes = 0;
-        try {
-          if (fs.promises && fs.promises.statfs) {
-            const stat = await fs.promises.statfs(rootPath);
-            freeBytes = Number(stat.bavail) * Number(stat.bsize);
-            totalBytes = Number(stat.blocks) * Number(stat.bsize);
-          } else {
-            const stat = fs.statfsSync(rootPath);
-            freeBytes = Number(stat.bavail) * Number(stat.bsize);
-            totalBytes = Number(stat.blocks) * Number(stat.bsize);
-          }
-        } catch {}
-
-        const info = winDriveCache.get(letter);
-        const driveType = info ? info.driveType : (letter === 'C' ? 3 : 3);
-        const isRemovable = info ? info.isRemovable : false;
-
-        let label = '';
-        if (info && info.volumeName) {
-          label = info.volumeName;
-        } else if (letter === 'C') {
-          label = 'OS Disk';
-        } else if (isRemovable) {
-          label = 'USB Drive';
-        } else if (driveType === 4) {
-          label = 'Network Drive';
-        } else if (driveType === 5) {
-          label = 'CD/DVD Drive';
+      if (!fs.existsSync(rootPath)) return null;
+      let freeBytes = 0;
+      let totalBytes = 0;
+      try {
+        if (fs.promises && fs.promises.statfs) {
+          const stat = await fs.promises.statfs(rootPath);
+          freeBytes = Number(stat.bavail) * Number(stat.bsize);
+          totalBytes = Number(stat.blocks) * Number(stat.bsize);
         } else {
-          label = 'Local Drive';
+          const stat = fs.statfsSync(rootPath);
+          freeBytes = Number(stat.bavail) * Number(stat.bsize);
+          totalBytes = Number(stat.blocks) * Number(stat.bsize);
         }
+      } catch {}
 
-        drives.push({
-          letter,
-          path: rootPath,
-          label,
-          freeBytes,
-          totalBytes,
-          usedBytes: totalBytes > freeBytes ? totalBytes - freeBytes : 0,
-          driveType,
-          isRemovable
-        });
+      const info = winDriveCache.get(letter);
+      const driveType = info ? info.driveType : (letter === 'C' ? 3 : 3);
+      const isRemovable = info ? info.isRemovable : false;
+
+      let label = '';
+      if (info && info.volumeName) {
+        label = info.volumeName;
+      } else if (letter === 'C') {
+        label = 'OS Disk';
+      } else if (isRemovable) {
+        label = 'USB Drive';
+      } else if (driveType === 4) {
+        label = 'Network Drive';
+      } else if (driveType === 5) {
+        label = 'CD/DVD Drive';
+      } else {
+        label = 'Local Drive';
       }
-    } catch {}
-  }
+
+      return {
+        letter,
+        path: rootPath,
+        label,
+        freeBytes,
+        totalBytes,
+        usedBytes: totalBytes > freeBytes ? totalBytes - freeBytes : 0,
+        driveType,
+        isRemovable
+      };
+    } catch {
+      return null;
+    }
+  });
+
+  const results = await Promise.all(drivePromises);
+  const drives = results.filter(Boolean);
 
   if (drives.length > 0) {
     cachedDrivesResult = drives;
     lastDrivesCacheTime = Date.now();
   }
   return drives;
+}
+
+/**
+ * Detect all mounted logical drives with storage metrics (in-flight deduplicated & non-blocking)
+ */
+async function getDrives(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && cachedDrivesResult && (now - lastDrivesCacheTime < DRIVES_CACHE_TTL_MS)) {
+    return cachedDrivesResult;
+  }
+  if (inFlightDrivesPromise && !forceRefresh) {
+    return inFlightDrivesPromise;
+  }
+  inFlightDrivesPromise = _scanDrivesInternal().finally(() => {
+    inFlightDrivesPromise = null;
+  });
+  return inFlightDrivesPromise;
 }
 
 /**
@@ -250,22 +266,27 @@ function resolvePath(rawPath) {
 }
 
 const dirReadCache = new Map();
+const inFlightDirReads = new Map();
 const DIR_CACHE_TTL_MS = 3000;
 
 function invalidateDirCache(targetPath) {
   if (!targetPath) {
     dirReadCache.clear();
+    inFlightDirReads.clear();
     return;
   }
   try {
     const resolved = resolvePath(targetPath);
     dirReadCache.delete(resolved);
+    inFlightDirReads.delete(resolved);
     const parent = path.dirname(resolved);
     if (parent && parent !== resolved) {
       dirReadCache.delete(parent);
+      inFlightDirReads.delete(parent);
     }
   } catch {
     dirReadCache.clear();
+    inFlightDirReads.clear();
   }
 }
 
@@ -307,74 +328,87 @@ async function readDirectory(targetPath) {
     };
   }
 
+  if (inFlightDirReads.has(resolved)) {
+    return inFlightDirReads.get(resolved);
+  }
+
+  const readPromise = (async () => {
+    try {
+      const dirents = await fs.promises.readdir(resolved, { withFileTypes: true });
+      const items = [];
+      const CHUNK_SIZE = 256;
+
+      for (let i = 0; i < dirents.length; i += CHUNK_SIZE) {
+        const chunk = dirents.slice(i, i + CHUNK_SIZE);
+        const chunkResults = await Promise.all(chunk.map(async (d) => {
+          const fullPath = path.join(resolved, d.name);
+          let isDir = d.isDirectory();
+          let isFile = d.isFile();
+          let size = 0;
+          let mtime = null;
+          let birthtime = null;
+          let atime = null;
+          let isReadOnly = false;
+
+          try {
+            const stats = await fs.promises.stat(fullPath);
+            size = stats.size;
+            mtime = stats.mtime;
+            birthtime = stats.birthtime;
+            atime = stats.atime;
+            isDir = stats.isDirectory();
+            isFile = stats.isFile();
+            isReadOnly = !(stats.mode & 0o200);
+          } catch {
+            // Keep dirent attributes on permission or symlink error
+          }
+
+          const ext = isDir ? '' : path.extname(d.name).toLowerCase();
+          return {
+            name: d.name,
+            path: fullPath,
+            isDirectory: isDir,
+            isFile: isFile,
+            size,
+            mtime: mtime ? mtime.toISOString() : null,
+            birthtime: birthtime ? birthtime.toISOString() : (mtime ? mtime.toISOString() : null),
+            atime: atime ? atime.toISOString() : (mtime ? mtime.toISOString() : null),
+            isReadOnly,
+            extension: ext,
+            isHidden: d.name.startsWith('.') || d.name.startsWith('~') || d.name.endsWith('~') || d.name.includes('~lock~') || d.name.startsWith('$')
+          };
+        }));
+        items.push(...chunkResults);
+      }
+
+      const result = {
+        success: true,
+        currentPath: resolved,
+        parentPath: path.dirname(resolved) !== resolved ? path.dirname(resolved) : null,
+        items
+      };
+
+      dirReadCache.set(resolved, { timestamp: now, data: result });
+      if (dirReadCache.size > 100) {
+        const oldestKey = dirReadCache.keys().next().value;
+        dirReadCache.delete(oldestKey);
+      }
+
+      return result;
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message,
+        items: []
+      };
+    }
+  })();
+
+  inFlightDirReads.set(resolved, readPromise);
   try {
-    const dirents = await fs.promises.readdir(resolved, { withFileTypes: true });
-    const items = [];
-    const CHUNK_SIZE = 256;
-
-    for (let i = 0; i < dirents.length; i += CHUNK_SIZE) {
-      const chunk = dirents.slice(i, i + CHUNK_SIZE);
-      const chunkResults = await Promise.all(chunk.map(async (d) => {
-        const fullPath = path.join(resolved, d.name);
-        let isDir = d.isDirectory();
-        let isFile = d.isFile();
-        let size = 0;
-        let mtime = null;
-        let birthtime = null;
-        let atime = null;
-        let isReadOnly = false;
-
-        try {
-          const stats = await fs.promises.stat(fullPath);
-          size = stats.size;
-          mtime = stats.mtime;
-          birthtime = stats.birthtime;
-          atime = stats.atime;
-          isDir = stats.isDirectory();
-          isFile = stats.isFile();
-          isReadOnly = !(stats.mode & 0o200);
-        } catch {
-          // Keep dirent attributes on permission or symlink error
-        }
-
-        const ext = isDir ? '' : path.extname(d.name).toLowerCase();
-        return {
-          name: d.name,
-          path: fullPath,
-          isDirectory: isDir,
-          isFile: isFile,
-          size,
-          mtime: mtime ? mtime.toISOString() : null,
-          birthtime: birthtime ? birthtime.toISOString() : (mtime ? mtime.toISOString() : null),
-          atime: atime ? atime.toISOString() : (mtime ? mtime.toISOString() : null),
-          isReadOnly,
-          extension: ext,
-          isHidden: d.name.startsWith('.') || d.name.startsWith('~') || d.name.endsWith('~') || d.name.includes('~lock~') || d.name.startsWith('$')
-        };
-      }));
-      items.push(...chunkResults);
-    }
-
-    const result = {
-      success: true,
-      currentPath: resolved,
-      parentPath: path.dirname(resolved) !== resolved ? path.dirname(resolved) : null,
-      items
-    };
-
-    dirReadCache.set(resolved, { timestamp: now, data: result });
-    if (dirReadCache.size > 100) {
-      const oldestKey = dirReadCache.keys().next().value;
-      dirReadCache.delete(oldestKey);
-    }
-
-    return result;
-  } catch (err) {
-    return {
-      success: false,
-      error: err.message,
-      items: []
-    };
+    return await readPromise;
+  } finally {
+    inFlightDirReads.delete(resolved);
   }
 }
 
