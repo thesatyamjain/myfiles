@@ -616,7 +616,13 @@ ipcMain.handle('create-folder', async (_event, parentDir, name) => {
     if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(parentDir);
     return { success: true, path: target };
   } catch (err) {
-    return { success: false, error: err.message };
+    let errorMsg = err.message;
+    if (err.code === 'EEXIST') {
+      errorMsg = `A folder or file named "${name}" already exists in this location.`;
+    } else if (err.code === 'EACCES' || err.code === 'EPERM') {
+      errorMsg = `Permission denied to create folder in this directory.`;
+    }
+    return { success: false, error: errorMsg };
   }
 });
 
@@ -629,7 +635,11 @@ ipcMain.handle('create-file', async (_event, parentDir, name, content = '', enco
     if (fsEngine.invalidateDirCache) fsEngine.invalidateDirCache(parentDir);
     return { success: true, path: target };
   } catch (err) {
-    return { success: false, error: err.message };
+    let errorMsg = err.message;
+    if (err.code === 'EACCES' || err.code === 'EPERM') {
+      errorMsg = `Permission denied to create file in this directory.`;
+    }
+    return { success: false, error: errorMsg };
   }
 });
 

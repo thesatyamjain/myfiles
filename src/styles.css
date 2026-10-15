@@ -1247,9 +1247,9 @@ body.theme-light .view-btn.active {
 .search-wrapper {
   margin-left: auto;
   position: relative;
-  flex: 0 1 240px;
-  min-width: 170px;
-  max-width: 300px;
+  flex: 0 1 280px;
+  min-width: 200px;
+  max-width: 380px;
   flex-shrink: 1;
   transition: flex 0.24s var(--ease-out-expo), min-width 0.24s var(--ease-out-expo), max-width 0.24s var(--ease-out-expo);
 }
@@ -1257,9 +1257,9 @@ body.theme-light .view-btn.active {
 /* Fluid Focus & Query Expansion: Provides ample typing room without clipping */
 .search-wrapper:focus-within,
 .search-wrapper.has-query {
-  flex: 1 1 320px;
-  min-width: 250px;
-  max-width: 420px;
+  flex: 1 1 360px;
+  min-width: 260px;
+  max-width: 480px;
   z-index: 80;
 }
 
@@ -1318,11 +1318,13 @@ body.theme-light .view-btn.active {
   letter-spacing: -0.01em;
   padding: 0;
   line-height: 1.4;
+  text-overflow: ellipsis;
 }
 .search-box input::placeholder {
   color: var(--text-dim);
   opacity: 0.85;
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 450;
 }
 
 .btn-search-clear {
@@ -6565,15 +6567,15 @@ details[open] > .gi-summary .gi-chevron {
     min-width: 90px;
   }
   .search-wrapper {
-    flex: 0 1 200px;
-    min-width: 150px;
-    max-width: 260px;
+    flex: 0 1 250px;
+    min-width: 190px;
+    max-width: 340px;
   }
   .search-wrapper:focus-within,
   .search-wrapper.has-query {
-    flex: 1 1 300px;
-    min-width: 240px;
-    max-width: 380px;
+    flex: 1 1 340px;
+    min-width: 260px;
+    max-width: 440px;
   }
   .search-wrapper:not(:focus-within):not(.has-query) .btn-search-type #searchTypeLabel {
     display: none;
@@ -6614,15 +6616,15 @@ details[open] > .gi-summary .gi-chevron {
     min-width: 75px;
   }
   .search-wrapper {
-    flex: 0 1 180px;
-    min-width: 140px;
-    max-width: 240px;
+    flex: 0 1 220px;
+    min-width: 170px;
+    max-width: 290px;
   }
   .search-wrapper:focus-within,
   .search-wrapper.has-query {
-    flex: 1 1 280px;
-    min-width: 220px;
-    max-width: 340px;
+    flex: 1 1 300px;
+    min-width: 230px;
+    max-width: 370px;
   }
   .list-col-tag,
   .list-cell-tag {
@@ -6722,22 +6724,22 @@ details[open] > .gi-summary .gi-chevron {
     min-width: 80px;
   }
   .search-wrapper {
-    flex: 0 1 160px;
-    min-width: 130px;
-    max-width: 220px;
+    flex: 0 1 180px;
+    min-width: 150px;
+    max-width: 250px;
   }
   .search-wrapper:focus-within,
   .search-wrapper.has-query {
-    flex: 1 1 260px;
-    min-width: 190px;
-    max-width: 320px;
+    flex: 1 1 280px;
+    min-width: 210px;
+    max-width: 340px;
   }
   .search-box {
     height: 28px;
     padding: 0 6px;
   }
   .search-box input {
-    font-size: 11px;
+    font-size: 11.5px;
   }
 
   /* Status Bar Compact */

@@ -326,7 +326,13 @@ server = http.createServer(async (req, res) => {
           await fs.promises.mkdir(target, { recursive: false });
           res.end(JSON.stringify({ success: true, path: target }));
         } catch (err) {
-          res.end(JSON.stringify({ success: false, error: err.message }));
+          let errorMsg = err.message;
+          if (err.code === 'EEXIST') {
+            errorMsg = `A folder or file named "${data.name}" already exists in this location.`;
+          } else if (err.code === 'EACCES' || err.code === 'EPERM') {
+            errorMsg = `Permission denied to create folder in this directory.`;
+          }
+          res.end(JSON.stringify({ success: false, error: errorMsg }));
         }
         return;
       }
@@ -339,7 +345,11 @@ server = http.createServer(async (req, res) => {
           await fs.promises.writeFile(target, buf);
           res.end(JSON.stringify({ success: true, path: target }));
         } catch (err) {
-          res.end(JSON.stringify({ success: false, error: err.message }));
+          let errorMsg = err.message;
+          if (err.code === 'EACCES' || err.code === 'EPERM') {
+            errorMsg = `Permission denied to create file in this directory.`;
+          }
+          res.end(JSON.stringify({ success: false, error: errorMsg }));
         }
         return;
       }

@@ -8030,14 +8030,48 @@
 
   // --- FILE CREATION & MODALS ---
   function promptCreateFile(templateExt) {
+    const isSecondary = state.dualPaneActive && state.activePane === 'secondary' && state.secondaryPath;
+    const targetDir = isSecondary ? state.secondaryPath : state.currentPath;
+
+    if (!targetDir || targetDir === 'Recycle Bin' || targetDir === 'recycle-bin') {
+      showToast('Cannot create files inside Recycle Bin', 'info');
+      return;
+    }
+
+    const itemsInDir = isSecondary ? (state.secondaryItems || []) : (state.items || []);
+    const existingNames = new Set(itemsInDir.map(it => (it.name || '').toLowerCase()));
+
     const ext = templateExt === 'custom' ? '' : '.' + templateExt;
-    const defaultName = templateExt === 'custom' ? 'untitled.txt' : `untitled${ext}`;
+    const baseStem = templateExt === 'custom' ? 'untitled' : (templateExt === 'txt' ? 'New Text Document' : 'untitled');
+    const initialExt = templateExt === 'custom' ? '.txt' : ext;
+    let defaultName = `${baseStem}${initialExt}`;
+
+    if (existingNames.has(defaultName.toLowerCase())) {
+      let counter = 2;
+      while (existingNames.has(`${baseStem} (${counter})${initialExt}`.toLowerCase())) {
+        counter++;
+      }
+      defaultName = `${baseStem} (${counter})${initialExt}`;
+    }
 
     showInputModal('Create New File', 'Enter the file name:', defaultName, async (fileName) => {
       if (!fileName || !fileName.trim()) return;
-      const res = await api.createFile(state.currentPath, fileName.trim());
+      const trimmed = fileName.trim();
+      if (/[<>:"/\\|?*]/.test(trimmed)) {
+        showErrorModal('Invalid File Name', 'A file name cannot contain any of the following characters:\n\\ / : * ? " < > |');
+        return;
+      }
+      const res = await api.createFile(targetDir, trimmed);
       if (res.success) {
-        await navigateTo(state.currentPath, false);
+        if (isSecondary) {
+          await loadSecondaryPane(targetDir, false);
+          state.secondarySelected = (state.secondaryItems || []).find(it => it.name && it.name.toLowerCase() === trimmed.toLowerCase()) || null;
+          renderSecondaryPane();
+        } else {
+          state.pendingSelect = trimmed;
+          await navigateTo(targetDir, false);
+        }
+        showToast(`Created file "${trimmed}"`, 'success');
       } else {
         showErrorModal('Error Creating File', res.error);
       }
@@ -8045,11 +8079,43 @@
   }
 
   function promptCreateFolder() {
-    showInputModal('Create New Folder', 'Enter the folder name:', 'New folder', async (folderName) => {
+    const isSecondary = state.dualPaneActive && state.activePane === 'secondary' && state.secondaryPath;
+    const targetDir = isSecondary ? state.secondaryPath : state.currentPath;
+
+    if (!targetDir || targetDir === 'Recycle Bin' || targetDir === 'recycle-bin') {
+      showToast('Cannot create folders inside Recycle Bin', 'info');
+      return;
+    }
+
+    const itemsInDir = isSecondary ? (state.secondaryItems || []) : (state.items || []);
+    const existingNames = new Set(itemsInDir.map(it => (it.name || '').toLowerCase()));
+    let defaultName = 'New folder';
+    if (existingNames.has('new folder')) {
+      let counter = 2;
+      while (existingNames.has(`new folder (${counter})`)) {
+        counter++;
+      }
+      defaultName = `New folder (${counter})`;
+    }
+
+    showInputModal('Create New Folder', 'Enter the folder name:', defaultName, async (folderName) => {
       if (!folderName || !folderName.trim()) return;
-      const res = await api.createFolder(state.currentPath, folderName.trim());
+      const trimmed = folderName.trim();
+      if (/[<>:"/\\|?*]/.test(trimmed)) {
+        showErrorModal('Invalid Folder Name', 'A folder name cannot contain any of the following characters:\n\\ / : * ? " < > |');
+        return;
+      }
+      const res = await api.createFolder(targetDir, trimmed);
       if (res.success) {
-        await navigateTo(state.currentPath, false);
+        if (isSecondary) {
+          await loadSecondaryPane(targetDir, false);
+          state.secondarySelected = (state.secondaryItems || []).find(it => it.name && it.name.toLowerCase() === trimmed.toLowerCase()) || null;
+          renderSecondaryPane();
+        } else {
+          state.pendingSelect = trimmed;
+          await navigateTo(targetDir, false);
+        }
+        showToast(`Created folder "${trimmed}"`, 'success');
       } else {
         showErrorModal('Error Creating Folder', res.error);
       }
@@ -11050,6 +11116,9 @@
       el.secondaryViewport.addEventListener('contextmenu', (e) => {
         if (e.target.closest('.list-row') || e.target.closest('.grid-item') || e.target.closest('.column-item')) return;
         e.preventDefault();
+        if (state.dualPaneActive && state.activePane !== 'secondary') {
+          setActivePane('secondary');
+        }
         showContextMenu(e.clientX, e.clientY, null);
       });
     }
@@ -11248,7 +11317,7 @@
         state.searchType = 'kind';
         if (el.searchPopover) el.searchPopover.style.display = 'block';
         if (el.searchInput) {
-          el.searchInput.placeholder = 'Filter by kind (image, doc, code)...';
+          el.searchInput.placeholder = 'Filter by kind...';
           el.searchInput.focus();
         }
         return;
@@ -11257,7 +11326,7 @@
       if (attr === 'tags') {
         state.searchType = 'tags';
         if (el.searchInput) {
-          el.searchInput.placeholder = 'Filter by tag (red, blue...)...';
+          el.searchInput.placeholder = 'Filter by tag...';
           el.searchInput.focus();
         }
         if (el.searchInput && el.searchInput.value.trim()) {
@@ -11273,7 +11342,7 @@
         sortCurrentItems();
         renderCurrentView();
         if (el.searchInput) {
-          el.searchInput.placeholder = 'Search files by modified date...';
+          el.searchInput.placeholder = 'Search by modified date...';
         }
         return;
       }
@@ -11285,7 +11354,7 @@
         sortCurrentItems();
         renderCurrentView();
         if (el.searchInput) {
-          el.searchInput.placeholder = 'Search files by created date...';
+          el.searchInput.placeholder = 'Search by created date...';
         }
         return;
       }
@@ -11293,7 +11362,7 @@
       if (attr === 'content') {
         state.searchType = 'content';
         if (el.searchInput) {
-          el.searchInput.placeholder = 'Search contents inside files...';
+          el.searchInput.placeholder = 'Search file contents...';
           if (el.searchInput.value.trim()) {
             executeSearch(el.searchInput.value.trim());
           }
@@ -11303,7 +11372,7 @@
 
       state.searchType = 'name';
       if (el.searchInput) {
-        el.searchInput.placeholder = 'Search... (Ctrl+F)';
+        el.searchInput.placeholder = 'Search';
         if (el.searchInput.value.trim()) {
           executeSearch(el.searchInput.value.trim());
         }

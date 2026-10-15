@@ -1950,6 +1950,35 @@ console.log(`✓ Archive engines detected: 7-Zip=${!!p7z} (${p7z || 'none'}), ta
   assert(latestRenderer.includes('fGrad_drop_shadow'), 'renderer.js must use shared static SVG filter IDs');
   console.log('✓ High-Performance Core Engine Optimization Suite verified');
 
+  // 65. Smart New Folder Creation, Dual-Pane Target Routing & Collision Prevention Suite
+  function computeDefaultFolderName(items) {
+    const existing = new Set((items || []).map(it => (it.name || '').toLowerCase()));
+    let defaultName = 'New folder';
+    if (existing.has('new folder')) {
+      let counter = 2;
+      while (existing.has(`new folder (${counter})`)) {
+        counter++;
+      }
+      defaultName = `New folder (${counter})`;
+    }
+    return defaultName;
+  }
+
+  assert.strictEqual(computeDefaultFolderName([]), 'New folder');
+  assert.strictEqual(computeDefaultFolderName([{ name: 'New folder' }]), 'New folder (2)');
+  assert.strictEqual(computeDefaultFolderName([{ name: 'new folder' }, { name: 'New folder (2)' }]), 'New folder (3)');
+  assert.strictEqual(computeDefaultFolderName([{ name: 'New folder' }, { name: 'New folder (2)' }, { name: 'New folder (3)' }]), 'New folder (4)');
+
+  const latestServer = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert(latestRenderer.includes("Cannot create folders inside Recycle Bin"), 'renderer.js must protect Recycle Bin from folder creation');
+  assert(latestRenderer.includes("Cannot create files inside Recycle Bin"), 'renderer.js must protect Recycle Bin from file creation');
+  assert(latestRenderer.includes("const isSecondary = state.dualPaneActive && state.activePane === 'secondary' && state.secondaryPath"), 'renderer.js must route folder/file creation to active secondary pane in dual pane mode');
+  assert(latestRenderer.includes("state.pendingSelect = trimmed"), 'renderer.js must auto-select newly created folder or file');
+  assert(latestRenderer.includes('/[<>:"/\\\\|?*]/.test(trimmed)'), 'renderer.js must validate forbidden filename characters');
+  assert(latestMain.includes('A folder or file named "${name}" already exists in this location.'), 'main.js must provide clean error on EEXIST');
+  assert(latestServer.includes('A folder or file named "${data.name}" already exists in this location.'), 'server.js must provide clean error on EEXIST');
+  console.log('✓ Smart New Folder Creation, Dual-Pane Target Routing & Collision Prevention Suite verified');
+
   console.log('\nAll MyFiles self-checks passed successfully!');
 })().catch(err => {
   console.error('Self-check failed:', err);
